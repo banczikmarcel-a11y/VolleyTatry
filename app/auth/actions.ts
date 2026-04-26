@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { splitFullName } from "@/lib/player-name";
+import { createAdminClient } from "@/supabase/admin";
+import { getSupabaseConfig } from "@/supabase/env";
 import { createClient } from "@/supabase/server";
 
 type AuthPath = "/login" | "/register";
@@ -41,6 +43,92 @@ function getAuthError(error: unknown) {
   }
 
   return error instanceof Error ? error.message : "Authentication failed. Please try again.";
+}
+
+async function mergeExistingPlayerProfile({
+  email,
+  firstName,
+  fullName,
+  lastName,
+  newProfileId
+}: {
+  email: string;
+  firstName: string;
+  fullName: string;
+  lastName: string;
+  newProfileId: string;
+}) {
+  if (!getSupabaseConfig().serviceRoleKey) {
+    return;
+  }
+
+  if (!firstName.trim() || !lastName.trim()) {
+    return;
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data: existingProfile, error: existingProfileError } = await adminSupabase
+    .from("profiles")
+    .select("id,email")
+    .ilike("first_name", firstName)
+    .ilike("last_name", lastName)
+    .is("email", null)
+    .neq("id", newProfileId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingProfileError) {
+    throw existingProfileError;
+  }
+
+  if (!existingProfile) {
+    return;
+  }
+
+  const oldProfileId = existingProfile.id;
+
+  const [{ error: membershipsError }, { error: responsesError }, { error: lineupsError }, { error: matchesError }] = await Promise.all([
+    adminSupabase.from("team_memberships").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
+    adminSupabase.from("match_responses").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
+    adminSupabase.from("match_lineups").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
+    adminSupabase.from("matches").update({ created_by: newProfileId }).eq("created_by", oldProfileId)
+  ]);
+
+  if (membershipsError) {
+    throw membershipsError;
+  }
+
+  if (responsesError) {
+    throw responsesError;
+  }
+
+  if (lineupsError && !lineupsError.message.includes("public.match_lineups")) {
+    throw lineupsError;
+  }
+
+  if (matchesError) {
+    throw matchesError;
+  }
+
+  const { error: newProfileUpdateError } = await adminSupabase
+    .from("profiles")
+    .update({
+      email,
+      first_name: firstName,
+      full_name: fullName,
+      last_name: lastName
+    })
+    .eq("id", newProfileId);
+
+  if (newProfileUpdateError) {
+    throw newProfileUpdateError;
+  }
+
+  const { error: deleteOldProfileError } = await adminSupabase.from("profiles").delete().eq("id", oldProfileId);
+
+  if (deleteOldProfileError) {
+    throw deleteOldProfileError;
+  }
 }
 
 export async function signInWithPassword(formData: FormData) {
@@ -98,7 +186,7 @@ export async function signUpWithPassword(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -113,6 +201,16 @@ export async function signUpWithPassword(formData: FormData) {
 
     if (error) {
       authError = error.message;
+    }
+
+    if (!error && data.user) {
+      await mergeExistingPlayerProfile({
+        email,
+        firstName: firstName || "",
+        fullName,
+        lastName: lastName || "",
+        newProfileId: data.user.id
+      });
     }
   } catch (error) {
     redirectWith("/register", "error", getAuthError(error));

@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Save } from "lucide-react";
-import { updatePlayer } from "@/app/admin/players/actions";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Save, Trash2, X } from "lucide-react";
+import { deletePlayer, updatePlayer } from "@/app/admin/players/actions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { AdminPlayer } from "@/lib/admin-players";
 import type { Team } from "@/types/entities";
@@ -110,7 +109,7 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
   return (
     <Card className="p-0">
       <div className="overflow-x-auto">
-        <table className="min-w-[1180px] w-full border-collapse text-left">
+        <table className="min-w-[1260px] w-full border-collapse text-left">
           <thead className="bg-court-ice">
             <tr className="border-b border-court-line">
               <th className="px-5 py-4">
@@ -260,32 +259,61 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    <form id={`player-edit-${player.id}`} action={updatePlayer} className="flex items-center gap-2">
-                      <input type="hidden" name="profile_id" value={player.id} />
-                      {!isEditing ? (
-                        <>
-                          <input type="hidden" name="first_name" value={player.firstName} />
-                          <input type="hidden" name="last_name" value={player.lastName} />
-                          <input type="hidden" name="email" value={player.email ?? ""} />
-                          <input type="hidden" name="team_id" value={primaryMembership?.teamId ?? teams[0]?.id ?? ""} />
-                          <input type="hidden" name="role" value={primaryMembership?.role ?? "player"} />
-                          <input type="hidden" name="status" value={primaryMembership?.status ?? "active"} />
-                        </>
-                      ) : null}
-                      <button
-                        type={isEditing ? "submit" : "button"}
-                        onClick={isEditing ? undefined : () => setRowEditing(player.id, true)}
-                        className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-line text-court-blue transition hover:bg-court-ice hover:text-court-ink"
-                        title={isEditing ? "Uložiť" : "Upraviť"}
-                      >
-                        {isEditing ? <Save className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-                      </button>
+                    <div className="flex items-center gap-2">
                       {isEditing ? (
-                        <Button type="button" variant="secondary" onClick={() => setRowEditing(player.id, false)}>
-                          Zrušiť
-                        </Button>
-                      ) : null}
-                    </form>
+                        <button
+                          type="button"
+                          onClick={() => setRowEditing(player.id, false)}
+                          className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-line text-court-blue transition hover:bg-court-ice hover:text-court-ink"
+                          title="Zrušiť"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setRowEditing(player.id, true)}
+                          className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-line text-court-blue transition hover:bg-court-ice hover:text-court-ink"
+                          title="Upraviť"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      <form id={`player-edit-${player.id}`} action={updatePlayer}>
+                        <input type="hidden" name="profile_id" value={player.id} />
+                        {!isEditing ? (
+                          <>
+                            <input type="hidden" name="first_name" value={player.firstName} />
+                            <input type="hidden" name="last_name" value={player.lastName} />
+                            <input type="hidden" name="email" value={player.email ?? ""} />
+                            <input type="hidden" name="team_id" value={primaryMembership?.teamId ?? teams[0]?.id ?? ""} />
+                            <input type="hidden" name="role" value={primaryMembership?.role ?? "player"} />
+                            <input type="hidden" name="status" value={primaryMembership?.status ?? "active"} />
+                          </>
+                        ) : null}
+                        {isEditing ? (
+                          <button
+                            type="submit"
+                            className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-line text-court-blue transition hover:bg-court-ice hover:text-court-ink"
+                            title="Uložiť"
+                          >
+                            <Save className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </form>
+
+                      <form action={deletePlayer}>
+                        <input type="hidden" name="profile_id" value={player.id} />
+                        <button
+                          type="submit"
+                          className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-coral text-court-coral transition hover:bg-court-coral/10"
+                          title="Zmazať hráča"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               );

@@ -336,3 +336,57 @@ export async function updatePlayer(formData: FormData) {
   revalidatePath("/admin/players");
   redirect(`/admin/players?message=${encodeURIComponent("Údaje hráča boli uložené.")}`);
 }
+
+export async function deletePlayer(formData: FormData) {
+  await requireAdminUser("/admin/players");
+
+  const profileId = getString(formData, "profile_id");
+
+  if (!profileId) {
+    redirectWithError("Chýba hráč na zmazanie.");
+  }
+
+  if (!getSupabaseConfig().serviceRoleKey) {
+    redirectWithError("Pre zmazanie hráča doplň do .env.local premennú SUPABASE_SERVICE_ROLE_KEY.");
+  }
+
+  try {
+    const supabase = createAdminClient();
+
+    const { error: lineupsError } = await supabase.from("match_lineups").delete().eq("profile_id", profileId);
+
+    if (lineupsError && !lineupsError.message.includes("public.match_lineups")) {
+      throw lineupsError;
+    }
+
+    const { error: responsesError } = await supabase.from("match_responses").delete().eq("profile_id", profileId);
+
+    if (responsesError) {
+      throw responsesError;
+    }
+
+    const { error: membershipsError } = await supabase.from("team_memberships").delete().eq("profile_id", profileId);
+
+    if (membershipsError) {
+      throw membershipsError;
+    }
+
+    const { error: matchesError } = await supabase.from("matches").update({ created_by: null }).eq("created_by", profileId);
+
+    if (matchesError) {
+      throw matchesError;
+    }
+
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(profileId);
+
+    if (authDeleteError) {
+      throw authDeleteError;
+    }
+  } catch (error) {
+    console.error("[players:delete]", { error, profileId });
+    redirectWithError(getErrorMessage(error));
+  }
+
+  revalidatePath("/admin/players");
+  redirect(`/admin/players?message=${encodeURIComponent("Hráč bol zmazaný.")}`);
+}
