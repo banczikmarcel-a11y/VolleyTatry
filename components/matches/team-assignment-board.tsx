@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { GripVertical, Mail, RotateCcw } from "lucide-react";
-import { saveMatchLineupAssignment } from "@/app/matches/actions";
+import { saveMatchLineupAssignment, submitHomeMatchSignup } from "@/app/matches/actions";
 import { showLiveToast } from "@/components/ui/live-toast";
 import { buildMatchEmailBody, buildMatchMailtoHref, buildMatchEmailSubject } from "@/lib/match-email";
 import type { MatchSignupPlayer } from "@/lib/matches";
@@ -25,12 +26,16 @@ type AssignmentTarget = "available" | "home" | "away";
 type AssignmentState = Record<string, AssignmentTarget>;
 
 function AssignmentColumn({
+  isPending,
+  onMarkUnavailable,
   onAssign,
   onDrop,
   players,
   target,
   title
 }: {
+  isPending: boolean;
+  onMarkUnavailable: (playerId: string) => void;
   onAssign: (playerId: string, nextTarget: AssignmentTarget) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, nextTarget: AssignmentTarget) => void;
   players: MatchSignupPlayer[];
@@ -58,19 +63,43 @@ function AssignmentColumn({
                 <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-court-blue" />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
+                {target !== "home" ? (
+                  <button
+                    type="button"
+                    onClick={() => onAssign(player.id, "home")}
+                    disabled={isPending}
+                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Tatry
+                  </button>
+                ) : null}
+                {target !== "away" ? (
+                  <button
+                    type="button"
+                    onClick={() => onAssign(player.id, "away")}
+                    disabled={isPending}
+                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Ostatní
+                  </button>
+                ) : null}
+                {target !== "available" ? (
+                  <button
+                    type="button"
+                    onClick={() => onAssign(player.id, "available")}
+                    disabled={isPending}
+                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Nepriradený
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => onAssign(player.id, "home")}
-                  className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white"
+                  onClick={() => onMarkUnavailable(player.id)}
+                  disabled={isPending}
+                  className="rounded-[8px] border border-court-coral px-2 py-1 text-xs font-black text-court-coral transition hover:bg-court-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Tatry
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAssign(player.id, "away")}
-                  className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white"
-                >
-                  Ostatní
+                  Nejdem
                 </button>
               </div>
             </div>
@@ -95,6 +124,7 @@ export function TeamAssignmentBoard({
   matchTitle = "Zápas",
   players
 }: TeamAssignmentBoardProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const initialAssignments = useMemo(
     () =>
@@ -194,6 +224,24 @@ export function TeamAssignmentBoard({
     assignPlayer(playerId, nextTarget);
   };
 
+  const markUnavailable = (playerId: string) => {
+    startTransition(async () => {
+      const result = await submitHomeMatchSignup({
+        matchId,
+        profileId: playerId,
+        status: "unavailable"
+      });
+
+      if (!result.ok) {
+        showLiveToast(result.error ?? "Nepodarilo sa zmeniť účasť hráča.", "error");
+        return;
+      }
+
+      router.refresh();
+      showLiveToast(result.message ?? "Hráč bol odhlásený zo zápasu.");
+    });
+  };
+
   const hasAssignments = grouped.home.length > 0 || grouped.away.length > 0;
 
   return (
@@ -251,13 +299,37 @@ export function TeamAssignmentBoard({
           <tbody>
             <tr>
               <td className="align-top p-3">
-                <AssignmentColumn title="Nepriradení hráči" players={grouped.available} onAssign={assignPlayer} onDrop={handleDrop} target="available" />
+                <AssignmentColumn
+                  title="Nepriradení hráči"
+                  players={grouped.available}
+                  onAssign={assignPlayer}
+                  onDrop={handleDrop}
+                  onMarkUnavailable={markUnavailable}
+                  isPending={isPending}
+                  target="available"
+                />
               </td>
               <td className="align-top p-3">
-                <AssignmentColumn title="Hráči Tatier" players={grouped.home} onAssign={assignPlayer} onDrop={handleDrop} target="home" />
+                <AssignmentColumn
+                  title="Hráči Tatier"
+                  players={grouped.home}
+                  onAssign={assignPlayer}
+                  onDrop={handleDrop}
+                  onMarkUnavailable={markUnavailable}
+                  isPending={isPending}
+                  target="home"
+                />
               </td>
               <td className="align-top p-3">
-                <AssignmentColumn title="Hráči Ostatní" players={grouped.away} onAssign={assignPlayer} onDrop={handleDrop} target="away" />
+                <AssignmentColumn
+                  title="Hráči Ostatní"
+                  players={grouped.away}
+                  onAssign={assignPlayer}
+                  onDrop={handleDrop}
+                  onMarkUnavailable={markUnavailable}
+                  isPending={isPending}
+                  target="away"
+                />
               </td>
             </tr>
           </tbody>
@@ -265,9 +337,33 @@ export function TeamAssignmentBoard({
       </div>
 
       <div className="grid gap-4 sm:hidden">
-        <AssignmentColumn title="Nepriradení hráči" players={grouped.available} onAssign={assignPlayer} onDrop={handleDrop} target="available" />
-        <AssignmentColumn title={homeTeamName} players={grouped.home} onAssign={assignPlayer} onDrop={handleDrop} target="home" />
-        <AssignmentColumn title={awayTeamName} players={grouped.away} onAssign={assignPlayer} onDrop={handleDrop} target="away" />
+        <AssignmentColumn
+          title="Nepriradení hráči"
+          players={grouped.available}
+          onAssign={assignPlayer}
+          onDrop={handleDrop}
+          onMarkUnavailable={markUnavailable}
+          isPending={isPending}
+          target="available"
+        />
+        <AssignmentColumn
+          title={homeTeamName}
+          players={grouped.home}
+          onAssign={assignPlayer}
+          onDrop={handleDrop}
+          onMarkUnavailable={markUnavailable}
+          isPending={isPending}
+          target="home"
+        />
+        <AssignmentColumn
+          title={awayTeamName}
+          players={grouped.away}
+          onAssign={assignPlayer}
+          onDrop={handleDrop}
+          onMarkUnavailable={markUnavailable}
+          isPending={isPending}
+          target="away"
+        />
       </div>
     </section>
   );

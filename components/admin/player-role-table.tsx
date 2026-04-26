@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { savePlayerRole } from "@/app/admin/players/actions";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Save } from "lucide-react";
+import { updatePlayer } from "@/app/admin/players/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,7 @@ type PlayerRoleTableProps = {
 };
 
 type SortKey = "email" | "firstName" | "lastName" | "primaryRole" | "primaryStatus" | "teamName";
+type EditingState = Record<string, boolean>;
 
 function getPlayerName(player: AdminPlayer) {
   return player.fullName || "Bez mena";
@@ -48,11 +49,10 @@ function SortHeader({
 export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("lastName");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [editing, setEditing] = useState<EditingState>({});
 
   const sortedPlayers = useMemo(() => {
     return [...players].sort((left, right) => {
-      const leftPrimaryMembership = left.memberships[0];
-      const rightPrimaryMembership = right.memberships[0];
       const direction = sortDirection === "asc" ? 1 : -1;
 
       const getValue = (player: AdminPlayer, key: SortKey) => {
@@ -76,22 +76,17 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
 
       const leftValue = getValue(left, sortKey);
       const rightValue = getValue(right, sortKey);
-
       const base = leftValue.localeCompare(rightValue, "sk", { numeric: true, sensitivity: "base" });
 
       if (base !== 0) {
         return base * direction;
       }
 
-      const leftFallback = [left.lastName, left.firstName, left.email].filter(Boolean).join(" ");
-      const rightFallback = [right.lastName, right.firstName, right.email].filter(Boolean).join(" ");
-      const fallback = leftFallback.localeCompare(rightFallback, "sk", { sensitivity: "base" });
-
-      if (fallback !== 0) {
-        return fallback * direction;
-      }
-
-      return (leftPrimaryMembership?.teamName ?? "").localeCompare(rightPrimaryMembership?.teamName ?? "", "sk") * direction;
+      return [left.lastName, left.firstName, left.email].filter(Boolean).join(" ").localeCompare(
+        [right.lastName, right.firstName, right.email].filter(Boolean).join(" "),
+        "sk",
+        { sensitivity: "base" }
+      ) * direction;
     });
   }, [players, sortDirection, sortKey]);
 
@@ -105,10 +100,17 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
     setSortDirection("asc");
   }
 
+  function setRowEditing(playerId: string, value: boolean) {
+    setEditing((current) => ({
+      ...current,
+      [playerId]: value
+    }));
+  }
+
   return (
     <Card className="p-0">
       <div className="overflow-x-auto">
-        <table className="min-w-[1320px] w-full border-collapse text-left">
+        <table className="min-w-[1180px] w-full border-collapse text-left">
           <thead className="bg-court-ice">
             <tr className="border-b border-court-line">
               <th className="px-5 py-4">
@@ -126,7 +128,6 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
                   E-mail
                 </SortHeader>
               </th>
-              <th className="px-5 py-4 text-xs font-black uppercase text-court-blue">Aktuálne roly</th>
               <th className="px-5 py-4">
                 <SortHeader active={sortKey === "teamName"} direction={sortDirection} onClick={() => handleSort("teamName")}>
                   Predvolené družstvo
@@ -148,82 +149,142 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
           <tbody className="divide-y divide-court-line">
             {sortedPlayers.map((player) => {
               const primaryMembership = player.memberships[0];
-              const formId = `player-role-${player.id}`;
+              const isEditing = editing[player.id] ?? false;
 
               return (
                 <tr key={player.id} className="align-top">
                   <td className="px-5 py-4">
-                    <p className="font-black text-court-ink">{player.firstName || getPlayerName(player)}</p>
+                    {isEditing ? (
+                      <input
+                        form={`player-edit-${player.id}`}
+                        name="first_name"
+                        defaultValue={player.firstName}
+                        className="focus-ring w-full min-w-[150px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      />
+                    ) : (
+                      <p className="font-black text-court-ink">{player.firstName || getPlayerName(player)}</p>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <p className="font-black text-court-ink">{player.lastName || "-"}</p>
+                    {isEditing ? (
+                      <input
+                        form={`player-edit-${player.id}`}
+                        name="last_name"
+                        defaultValue={player.lastName}
+                        className="focus-ring w-full min-w-[150px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      />
+                    ) : (
+                      <p className="font-black text-court-ink">{player.lastName || "-"}</p>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <p className="max-w-[220px] truncate text-sm font-bold text-court-blue">{getPlayerEmail(player)}</p>
+                    {isEditing ? (
+                      <input
+                        form={`player-edit-${player.id}`}
+                        name="email"
+                        type="email"
+                        defaultValue={player.email ?? ""}
+                        className="focus-ring w-full min-w-[220px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                      />
+                    ) : (
+                      <p className="max-w-[220px] truncate text-sm font-bold text-court-blue">{getPlayerEmail(player)}</p>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex max-w-[280px] flex-wrap gap-2">
-                      {player.memberships.length > 0 ? (
-                        player.memberships.map((membership) => (
-                          <Badge key={membership.id} tone={membership.role === "player" ? "neutral" : "mint"}>
-                            {membership.teamName} · {membership.role} · {membership.status}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge tone="coral">bez tímu</Badge>
-                      )}
-                    </div>
+                    {isEditing ? (
+                      <select
+                        form={`player-edit-${player.id}`}
+                        name="team_id"
+                        defaultValue={primaryMembership?.teamId ?? teams[0]?.id ?? ""}
+                        className="focus-ring w-full min-w-[180px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      >
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Badge tone="neutral">{primaryMembership?.teamName ?? "Bez tímu"}</Badge>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <select
-                      id={`team-${player.id}`}
-                      form={formId}
-                      name="team_id"
-                      defaultValue={primaryMembership?.teamId ?? teams[0]?.id ?? ""}
-                      className="focus-ring w-full min-w-[180px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
-                      required
-                    >
-                      {teams.map((team) => (
-                        <option key={team.id} value={team.id}>
-                          {team.name}
-                        </option>
-                      ))}
-                    </select>
+                    {isEditing ? (
+                      <select
+                        form={`player-edit-${player.id}`}
+                        name="role"
+                        defaultValue={primaryMembership?.role ?? "player"}
+                        className="focus-ring w-full min-w-[140px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      >
+                        <option value="player">Hráč</option>
+                        <option value="coach">Tréner</option>
+                        <option value="owner">Vlastník</option>
+                      </select>
+                    ) : (
+                      <Badge tone={primaryMembership?.role === "player" ? "neutral" : "mint"}>
+                        {primaryMembership?.role === "coach"
+                          ? "Tréner"
+                          : primaryMembership?.role === "owner"
+                            ? "Vlastník"
+                            : "Hráč"}
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <select
-                      id={`role-${player.id}`}
-                      form={formId}
-                      name="role"
-                      defaultValue={primaryMembership?.role ?? "player"}
-                      className="focus-ring w-full min-w-[150px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
-                      required
-                    >
-                      <option value="player">Hráč</option>
-                      <option value="coach">Tréner</option>
-                      <option value="owner">Vlastník</option>
-                    </select>
+                    {isEditing ? (
+                      <select
+                        form={`player-edit-${player.id}`}
+                        name="status"
+                        defaultValue={primaryMembership?.status ?? "active"}
+                        className="focus-ring w-full min-w-[140px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      >
+                        <option value="active">Aktívny</option>
+                        <option value="invited">Pozvaný</option>
+                        <option value="inactive">Neaktívny</option>
+                      </select>
+                    ) : (
+                      <Badge tone={primaryMembership?.status === "active" ? "mint" : primaryMembership?.status === "inactive" ? "coral" : "neutral"}>
+                        {primaryMembership?.status === "active"
+                          ? "Aktívny"
+                          : primaryMembership?.status === "invited"
+                            ? "Pozvaný"
+                            : primaryMembership?.status === "inactive"
+                              ? "Neaktívny"
+                              : "Bez stavu"}
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-5 py-4">
-                    <select
-                      id={`status-${player.id}`}
-                      form={formId}
-                      name="status"
-                      defaultValue={primaryMembership?.status ?? "active"}
-                      className="focus-ring w-full min-w-[150px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
-                      required
-                    >
-                      <option value="active">Aktívny</option>
-                      <option value="invited">Pozvaný</option>
-                      <option value="inactive">Neaktívny</option>
-                    </select>
-                  </td>
-                  <td className="px-5 py-4">
-                    <form id={formId} action={savePlayerRole}>
+                    <form id={`player-edit-${player.id}`} action={updatePlayer} className="flex items-center gap-2">
                       <input type="hidden" name="profile_id" value={player.id} />
-                      <Button type="submit" className="px-3">
-                        Uložiť
-                      </Button>
+                      {!isEditing ? (
+                        <>
+                          <input type="hidden" name="first_name" value={player.firstName} />
+                          <input type="hidden" name="last_name" value={player.lastName} />
+                          <input type="hidden" name="email" value={player.email ?? ""} />
+                          <input type="hidden" name="team_id" value={primaryMembership?.teamId ?? teams[0]?.id ?? ""} />
+                          <input type="hidden" name="role" value={primaryMembership?.role ?? "player"} />
+                          <input type="hidden" name="status" value={primaryMembership?.status ?? "active"} />
+                        </>
+                      ) : null}
+                      <button
+                        type={isEditing ? "submit" : "button"}
+                        onClick={isEditing ? undefined : () => setRowEditing(player.id, true)}
+                        className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-court-line text-court-blue transition hover:bg-court-ice hover:text-court-ink"
+                        title={isEditing ? "Uložiť" : "Upraviť"}
+                      >
+                        {isEditing ? <Save className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                      </button>
+                      {isEditing ? (
+                        <Button type="button" variant="secondary" onClick={() => setRowEditing(player.id, false)}>
+                          Zrušiť
+                        </Button>
+                      ) : null}
                     </form>
                   </td>
                 </tr>

@@ -27,9 +27,12 @@ export default async function AdminPlayersPage({ searchParams }: AdminPlayersPag
       <QueryToast error={params?.error} message={params?.message} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <PageHeader eyebrow="Admin" title="Správa hráčov" />
-        <Link href="/matches" className="text-sm font-black text-court-ink underline decoration-court-mint underline-offset-4">
-          Späť na zápasy
-        </Link>
+        <div className="flex items-center gap-3">
+          {teams.length > 0 ? <CreatePlayerForm teams={teams} /> : null}
+          <Link href="/matches" className="text-sm font-black text-court-ink underline decoration-court-mint underline-offset-4">
+            Späť na zápasy
+          </Link>
+        </div>
       </div>
 
       {playersError || teamsError ? (
@@ -43,9 +46,7 @@ export default async function AdminPlayersPage({ searchParams }: AdminPlayersPag
           <p className="text-sm font-black uppercase text-court-coral">Žiadne tímy</p>
           <p className="mt-2 text-sm leading-6 text-court-blue">Najprv spusti seed pre Tatry a Ostatní.</p>
         </Card>
-      ) : (
-        <CreatePlayerForm teams={teams} />
-      )}
+      ) : null}
 
       {players.length > 0 ? <PlayerRoleTable players={players} teams={teams} /> : null}
 

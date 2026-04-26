@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Dumbbell, Menu, UserCircle } from "lucide-react";
+import { Dumbbell, UserCircle } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { MobileNav } from "@/components/mobile-nav";
 import { buttonClasses } from "@/components/ui/button";
 import { navigationItems } from "@/lib/navigation";
 import { formatFullName } from "@/lib/player-name";
@@ -86,41 +87,7 @@ export async function AppShell({ children }: AppShellProps) {
             </div>
           )}
 
-          <details className="relative md:hidden">
-            <summary className="focus-ring flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-[8px] bg-court-ink text-white [&::-webkit-details-marker]:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open navigation</span>
-            </summary>
-            <div className="absolute right-0 mt-3 w-64 rounded-[8px] border border-court-line bg-white p-2 shadow-panel">
-              {[...navigationItems, ...(user ? [] : [{ href: "/login", label: "Prihlásenie" }, { href: "/register", label: "Registrácia" }])].map(
-                (item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="focus-ring block rounded-[8px] px-3 py-3 text-sm font-bold text-court-blue hover:bg-court-ice hover:text-court-ink"
-                  >
-                    {item.label}
-                  </Link>
-                )
-              )}
-              {user ? (
-                <div className="mt-2 border-t border-court-line pt-2">
-                  <div className="rounded-[8px] bg-court-ice px-3 py-3">
-                    <p className="text-[11px] font-black uppercase text-court-blue">Prihlásený</p>
-                    <p className="truncate text-sm font-black text-court-ink">{userLabel}</p>
-                  </div>
-                  <form action={signOut}>
-                    <button
-                      type="submit"
-                      className="focus-ring mt-2 block w-full rounded-[8px] px-3 py-3 text-left text-sm font-bold text-court-blue hover:bg-court-ice hover:text-court-ink"
-                    >
-                      Odhlásiť
-                    </button>
-                  </form>
-                </div>
-              ) : null}
-            </div>
-          </details>
+          <MobileNav userLabel={userLabel} />
         </nav>
       </header>
 

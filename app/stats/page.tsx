@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Filter } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { PlayerProfileStats } from "@/components/profile/player-profile-stats";
+import { AttendanceTable } from "@/components/stats/attendance-table";
 import { PlayerStatsPicker } from "@/components/stats/player-stats-picker";
 import { TeamRecordCard } from "@/components/stats/team-record-card";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getStats } from "@/lib/stats";
+import { getAttendanceStats, getStats } from "@/lib/stats";
 import { getPlayerOptions, getPlayerProfileById } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
@@ -22,16 +23,18 @@ type StatsPageProps = {
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
   const params = await searchParams;
-  const view = params?.view === "player" ? "player" : "team";
+  const view = params?.view === "player" ? "player" : params?.view === "attendance" ? "attendance" : "team";
   const selectedPlayerId = params?.player?.trim() ? params.player : null;
   const [
     { availableMonths, availableQuarters, error, filteredMatchesCount, isConfigured, records, selectedMonth, selectedQuarter, selectedYear, years },
     { error: playersError, players, isConfigured: playersConfigured },
-    playerProfileResult
+    playerProfileResult,
+    attendanceResult
   ] = await Promise.all([
     getStats(params?.year, params?.quarter, params?.month),
     getPlayerOptions(),
-    selectedPlayerId ? getPlayerProfileById(selectedPlayerId) : Promise.resolve({ error: null, isConfigured: true, profile: null })
+    selectedPlayerId ? getPlayerProfileById(selectedPlayerId) : Promise.resolve({ error: null, isConfigured: true, profile: null }),
+    getAttendanceStats(params?.year)
   ]);
 
   const buildStatsHref = (year: number, quarter?: number | null, month?: number | null) => {
@@ -56,8 +59,14 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       <div className="flex flex-col gap-3">
         <PageHeader
           eyebrow="Stats"
-          title={view === "player" ? "Štatistika hráča" : "Tímová bilancia"}
-          description={view === "player" ? "Po výbere hráča sa zobrazí ročná bilancia a história jeho zápasov." : "Výhry a prehry podľa tímu, filtrované podľa sezóny. Počítajú sa iba ukončené zápasy."}
+          title={view === "player" ? "Štatistika hráča" : view === "attendance" ? "Účasť" : "Tímová bilancia"}
+          description={
+            view === "player"
+              ? "Po výbere hráča sa zobrazí ročná bilancia a história jeho zápasov."
+              : view === "attendance"
+                ? "Mesačný prehľad potvrdenej účasti hráčov v ukončených zápasoch."
+                : "Výhry a prehry podľa tímu, filtrované podľa sezóny. Počítajú sa iba ukončené zápasy."
+          }
         />
       </div>
 
@@ -70,6 +79,12 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
           className={buttonClasses({ className: view === "player" ? "" : "bg-transparent", variant: view === "player" ? "primary" : "ghost" })}
         >
           Štatistika hráča
+        </Link>
+        <Link
+          href="/stats?view=attendance"
+          className={buttonClasses({ className: view === "attendance" ? "" : "bg-transparent", variant: view === "attendance" ? "primary" : "ghost" })}
+        >
+          Účasť
         </Link>
       </div>
 
@@ -108,6 +123,55 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
             <Card>
               <p className="text-sm font-black uppercase text-court-mint">Výber hráča</p>
               <p className="mt-2 text-sm leading-6 text-court-blue">Vyber hráča z comboboxu a zobrazí sa jeho štatistika.</p>
+            </Card>
+          )}
+        </>
+      ) : view === "attendance" ? (
+        <>
+          <Card className="p-3">
+            <div className="space-y-3">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-black uppercase text-court-mint">
+                  <Filter className="h-4 w-4" />
+                  Rok
+                </p>
+                <h2 className="mt-2 text-lg font-black text-court-ink">Účasť hráčov - {attendanceResult.selectedYear}</h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {attendanceResult.years.map((year) => (
+                  <Link
+                    key={year}
+                    href={`/stats?view=attendance&year=${year}`}
+                    className={cn(buttonClasses({ variant: year === attendanceResult.selectedYear ? "primary" : "secondary" }), "px-3 py-1.5 text-xs")}
+                  >
+                    {year}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {!attendanceResult.isConfigured ? (
+            <Card className="border-court-coral bg-court-coral/10">
+              <p className="text-sm font-black uppercase text-court-coral">Supabase</p>
+              <h2 className="mt-2 text-xl font-black text-court-ink">Účasť čaká na databázu.</h2>
+            </Card>
+          ) : null}
+
+          {attendanceResult.error ? (
+            <Card className="border-red-200 bg-red-50">
+              <p className="text-sm font-bold text-red-700">{attendanceResult.error}</p>
+            </Card>
+          ) : null}
+
+          {attendanceResult.rows.length > 0 ? (
+            <Card className="p-0">
+              <AttendanceTable rows={attendanceResult.rows} />
+            </Card>
+          ) : (
+            <Card>
+              <p className="text-sm font-black uppercase text-court-mint">Bez účasti</p>
+              <p className="mt-2 text-sm leading-6 text-court-blue">Pre zvolený rok sa ešte nenašli žiadne potvrdené účasti.</p>
             </Card>
           )}
         </>
@@ -191,7 +255,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       ) : null}
 
       {records.length > 0 ? (
-        <section className="grid gap-3 xl:grid-cols-2">
+        <section className="grid grid-cols-2 gap-2">
           {records.map((record) => (
             <TeamRecordCard key={record.slug} record={record} />
           ))}

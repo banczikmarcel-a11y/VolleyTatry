@@ -1,5 +1,7 @@
 import { getSupabaseConfig } from "@/supabase/env";
+import { createAdminClient } from "@/supabase/admin";
 import { createClient } from "@/supabase/server";
+import { formatFullName, formatSortName, splitFullName } from "@/lib/player-name";
 
 export type TeamRecord = {
   draws: number;
@@ -53,6 +55,22 @@ export type HeadToHeadSummary = {
   } | null;
 };
 
+export type AttendanceRow = {
+  monthly: number[];
+  playerId: string;
+  playerName: string;
+  sortLabel: string;
+  total: number;
+};
+
+export type AttendanceStatsResult = {
+  error: string | null;
+  isConfigured: boolean;
+  rows: AttendanceRow[];
+  selectedYear: number;
+  years: number[];
+};
+
 type TeamRow = {
   id: string;
   name: string;
@@ -66,6 +84,24 @@ type CompletedMatchRow = {
   home_team_id: string;
   match_date?: string;
   season_year?: number;
+};
+
+type AttendanceMatchRow = {
+  id: string;
+  match_date: string;
+  season_year: number;
+};
+
+type AttendanceResponseRow = {
+  match_id: string;
+  profile_id: string;
+};
+
+type AttendanceProfileRow = {
+  first_name: string | null;
+  full_name: string | null;
+  id: string;
+  last_name: string | null;
 };
 
 const trackedTeamSlugs = ["tatry", "ostatni"] as const;
@@ -433,5 +469,106 @@ export async function getHeadToHeadSummary(): Promise<HeadToHeadSummary> {
       rightSetWins,
       rightWins
     }
+  };
+}
+
+export async function getAttendanceStats(year?: string): Promise<AttendanceStatsResult> {
+  const selectedYear = parseYear(year);
+
+  if (!getSupabaseConfig().isConfigured) {
+    return {
+      error: null,
+      isConfigured: false,
+      rows: [],
+      selectedYear,
+      years: [selectedYear]
+    };
+  }
+
+  const supabase = getSupabaseConfig().serviceRoleKey ? createAdminClient() : await createClient();
+  const [{ data: yearRows, error: yearsError }, { data: profiles, error: profilesError }, { data: matches, error: matchesError }] = await Promise.all([
+    supabase.from("matches").select("season_year").eq("status", "completed").order("season_year", { ascending: false }),
+    supabase.from("profiles").select("id,full_name,first_name,last_name").order("last_name", { ascending: true }).order("first_name", { ascending: true }),
+    supabase
+      .from("matches")
+      .select("id,season_year,match_date")
+      .eq("status", "completed")
+      .eq("season_year", selectedYear)
+      .order("match_date", { ascending: true })
+  ]);
+
+  if (yearsError) {
+    return { error: yearsError.message, isConfigured: true, rows: [], selectedYear, years: [selectedYear] };
+  }
+
+  if (profilesError) {
+    return { error: profilesError.message, isConfigured: true, rows: [], selectedYear, years: [selectedYear] };
+  }
+
+  if (matchesError) {
+    return { error: matchesError.message, isConfigured: true, rows: [], selectedYear, years: [selectedYear] };
+  }
+
+  const years = Array.from(new Set((yearRows ?? []).map((row) => row.season_year))).filter(Number.isInteger);
+  const availableYears = years.length > 0 ? years : [selectedYear];
+  const matchRows = (matches ?? []) as AttendanceMatchRow[];
+  const matchIds = matchRows.map((match) => match.id);
+
+  let responses: AttendanceResponseRow[] = [];
+
+  if (matchIds.length > 0) {
+    const { data: responseRows, error: responsesError } = await supabase
+      .from("match_responses")
+      .select("match_id,profile_id")
+      .in("match_id", matchIds)
+      .eq("status", "available");
+
+    if (responsesError) {
+      return { error: responsesError.message, isConfigured: true, rows: [], selectedYear, years: availableYears };
+    }
+
+    responses = (responseRows ?? []) as AttendanceResponseRow[];
+  }
+
+  const monthByMatchId = new Map(matchRows.map((match) => [match.id, new Date(match.match_date).getMonth()]));
+  const countsByProfileId = new Map<string, number[]>();
+
+  responses.forEach((response) => {
+    const monthIndex = monthByMatchId.get(response.match_id);
+
+    if (monthIndex === undefined) {
+      return;
+    }
+
+    const counts = countsByProfileId.get(response.profile_id) ?? Array.from({ length: 12 }, () => 0);
+    counts[monthIndex] += 1;
+    countsByProfileId.set(response.profile_id, counts);
+  });
+
+  const rows = ((profiles ?? []) as AttendanceProfileRow[])
+    .map((profile) => {
+      const fallback = splitFullName(profile.full_name);
+      const firstName = profile.first_name ?? fallback.firstName;
+      const lastName = profile.last_name ?? fallback.lastName;
+      const playerName = formatFullName(firstName, lastName, profile.full_name);
+      const sortLabel = formatSortName(firstName, lastName, playerName);
+      const monthly = countsByProfileId.get(profile.id) ?? Array.from({ length: 12 }, () => 0);
+
+      return {
+        monthly,
+        playerId: profile.id,
+        playerName,
+        sortLabel,
+        total: monthly.reduce((sum, value) => sum + value, 0)
+      };
+    })
+    .sort((left, right) => left.sortLabel.localeCompare(right.sortLabel, "sk", { sensitivity: "base" }));
+
+  return {
+    error: null,
+    isConfigured: true,
+    rows,
+    selectedYear,
+    years: availableYears
   };
 }

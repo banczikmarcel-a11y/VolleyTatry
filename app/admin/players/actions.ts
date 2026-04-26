@@ -96,6 +96,38 @@ async function upsertMembership({
   return error;
 }
 
+async function updateAuthUserProfile({
+  email,
+  firstName,
+  fullName,
+  lastName,
+  profileId
+}: {
+  email: string | null;
+  firstName: string;
+  fullName: string;
+  lastName: string;
+  profileId: string;
+}) {
+  if (!getSupabaseConfig().serviceRoleKey) {
+    return;
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.auth.admin.updateUserById(profileId, {
+    ...(email ? { email, email_confirm: true } : {}),
+    user_metadata: {
+      first_name: firstName,
+      full_name: fullName,
+      last_name: lastName
+    }
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function createPlayer(formData: FormData) {
   await requireAdminUser("/admin/players");
 
@@ -233,4 +265,74 @@ export async function savePlayerRole(formData: FormData) {
 
   revalidatePath("/admin/players");
   redirect(`/admin/players?message=${encodeURIComponent("Rola bola uložená.")}`);
+}
+
+export async function updatePlayer(formData: FormData) {
+  await requireAdminUser("/admin/players");
+
+  const profileId = getString(formData, "profile_id");
+  const firstName = getString(formData, "first_name");
+  const lastName = getString(formData, "last_name");
+  const email = getString(formData, "email").toLowerCase();
+  const teamId = getString(formData, "team_id");
+  const role = getString(formData, "role");
+  const status = getString(formData, "status");
+  const fullName = formatFullName(firstName, lastName, null);
+
+  if (!profileId || !firstName || !lastName) {
+    redirectWithError("Vyplň meno, priezvisko a hráča.");
+  }
+
+  if (email && !isEmail(email)) {
+    redirectWithError("Zadaj platný e-mail hráča.");
+  }
+
+  if (!teamId) {
+    redirectWithError("Vyber predvolené družstvo.");
+  }
+
+  if (!isTeamRole(role)) {
+    redirectWithError("Vyber platnú rolu.");
+  }
+
+  if (!isMembershipStatus(status)) {
+    redirectWithError("Vyber platný stav členstva.");
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        email: email || null,
+        first_name: firstName,
+        full_name: fullName,
+        last_name: lastName
+      })
+      .eq("id", profileId);
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    await updateAuthUserProfile({
+      email: email || null,
+      firstName,
+      fullName,
+      lastName,
+      profileId
+    });
+
+    const membershipError = await upsertMembership({ profileId, role, status, teamId });
+
+    if (membershipError) {
+      throw membershipError;
+    }
+  } catch (error) {
+    console.error("[players:update]", { error, profileId });
+    redirectWithError(getErrorMessage(error));
+  }
+
+  revalidatePath("/admin/players");
+  redirect(`/admin/players?message=${encodeURIComponent("Údaje hráča boli uložené.")}`);
 }
