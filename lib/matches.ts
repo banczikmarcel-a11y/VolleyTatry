@@ -32,6 +32,7 @@ export type MatchDetail = MatchSummary & {
   availablePlayers: MatchSignupPlayer[];
   responseCounts: Record<MatchResponseStatus, number>;
   signupPlayers: MatchSignupPlayer[];
+  unavailablePlayers: MatchSignupPlayer[];
   userResponse: MatchResponseStatus | null;
 };
 
@@ -492,8 +493,16 @@ export async function getMatchDetail(
         .map((response) => response.profile_id as string)
     )
   );
+  const unavailableProfileIds = Array.from(
+    new Set(
+      responses
+        .filter((response) => response.status === "unavailable" && typeof response.profile_id === "string")
+        .map((response) => response.profile_id as string)
+    )
+  );
 
   let availablePlayers: MatchSignupPlayer[] = [];
+  let unavailablePlayers: MatchSignupPlayer[] = [];
 
   if (availableProfileIds.length > 0 && getSupabaseConfig().serviceRoleKey) {
     const adminSupabase = createAdminClient();
@@ -520,6 +529,22 @@ export async function getMatchDetail(
       .sort((left, right) => left.sortLabel.localeCompare(right.sortLabel, "sk"));
   }
 
+  if (unavailableProfileIds.length > 0 && getSupabaseConfig().serviceRoleKey) {
+    const adminSupabase = createAdminClient();
+    const { data: profiles, error: profilesError } = await adminSupabase
+      .from("profiles")
+      .select("id,full_name,first_name,last_name,email")
+      .in("id", unavailableProfileIds);
+
+    if (profilesError) {
+      return { error: profilesError.message, isConfigured: true, match: null };
+    }
+
+    unavailablePlayers = (profiles ?? [])
+      .map((profile) => mapProfileToSignupPlayer(profile as ProfileLookupRow))
+      .sort((left, right) => left.sortLabel.localeCompare(right.sortLabel, "sk"));
+  }
+
   const signupMatch = (await attachSignupPlayers([mapMatch(data as MatchRow)]))[0];
 
   return {
@@ -530,6 +555,7 @@ export async function getMatchDetail(
       ...signupMatch,
       notes: (data as MatchRow).notes ?? null,
       responseCounts,
+      unavailablePlayers,
       userResponse
     }
   };

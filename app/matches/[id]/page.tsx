@@ -6,6 +6,7 @@ import { HomeMatchSignupPanel } from "@/components/matches/home-match-signup-pan
 import { MatchResponsePanel } from "@/components/matches/match-response-panel";
 import { MatchResultForm } from "@/components/matches/match-result-form";
 import { TeamAssignmentBoard } from "@/components/matches/team-assignment-board";
+import { UnavailablePlayersList } from "@/components/matches/unavailable-players-list";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -130,6 +131,10 @@ export default async function MatchDetailPage({ params, searchParams }: MatchDet
                   <p className="text-xs font-black uppercase text-court-blue">Nejdem</p>
                   <p className="mt-1 text-lg font-black text-court-ink">{match.responseCounts.unavailable}</p>
                 </div>
+              </div>
+              <div className="mt-3">
+                <p className="text-xs font-black uppercase text-court-blue">Zoznam hráčov Nejdem</p>
+                <UnavailablePlayersList isConfigured={isConfigured} matchId={match.id} players={match.unavailablePlayers} />
               </div>
             </Card>
           </div>
