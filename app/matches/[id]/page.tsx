@@ -148,6 +148,7 @@ export default async function MatchDetailPage({ params, searchParams }: MatchDet
               homeSets={match.homeSets}
               awaySets={match.awaySets}
               canEmailAdmin={adminState.isAdmin}
+              isLocked={isCompleted}
               matchDateLabel={formatMatchDate(match.startsAt)}
               matchTitle={match.title}
               players={match.availablePlayers}

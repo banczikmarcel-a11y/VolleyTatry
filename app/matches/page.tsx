@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AlertCircle, CalendarPlus } from "lucide-react";
 import { MatchListCard } from "@/components/matches/match-list-card";
 import { MatchesListView } from "@/components/matches/matches-list-view";
-import { PageHeader } from "@/components/page-header";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { QueryToast } from "@/components/ui/query-toast";
@@ -26,10 +25,15 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
   return (
     <div className="space-y-6 sm:space-y-8">
       <QueryToast error={params?.error} message={params?.message} />
-      <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <PageHeader eyebrow="Zápasy" title="Zápasový kalendár" description="Prehľad termínov, miest a tímov s rýchlou cestou k potvrdeniu účasti." />
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
-          <div className="inline-flex rounded-[8px] border border-court-line bg-white p-0.5 sm:p-1">
+      <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-1">
+          <Link href="/" className="text-sm font-black text-court-blue underline decoration-court-mint underline-offset-4">
+            Domov
+          </Link>
+          <h1 className="text-[25px] font-black leading-tight text-court-ink">Zápasy</h1>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3">
+          <div className="inline-flex shrink-0 rounded-[8px] border border-court-line bg-white p-0.5 sm:p-1">
             <Link href="/matches?view=list" className={buttonClasses({ className: view === "list" ? "" : "bg-transparent", variant: view === "list" ? "primary" : "ghost" })}>
               Zoznam
             </Link>
@@ -37,7 +41,7 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
               Karta
             </Link>
           </div>
-          <Link href="/admin/matches/new" className={buttonClasses({ variant: "secondary" })}>
+          <Link href="/admin/matches/new" className={buttonClasses({ className: "shrink-0", variant: "secondary" })}>
             <CalendarPlus className="mr-2 h-4 w-4" />
             Nový zápas
           </Link>

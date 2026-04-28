@@ -15,6 +15,7 @@ type TeamAssignmentBoardProps = {
   canEmailAdmin?: boolean;
   homeTeamName: string;
   homeSets?: number | null;
+  isLocked?: boolean;
   matchId: string;
   matchDateLabel?: string;
   matchTitle?: string;
@@ -27,6 +28,7 @@ type AssignmentState = Record<string, AssignmentTarget>;
 
 function AssignmentColumn({
   isPending,
+  isLocked,
   onMarkUnavailable,
   onAssign,
   onDrop,
@@ -35,6 +37,7 @@ function AssignmentColumn({
   title
 }: {
   isPending: boolean;
+  isLocked: boolean;
   onMarkUnavailable: (playerId: string) => void;
   onAssign: (playerId: string, nextTarget: AssignmentTarget) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, nextTarget: AssignmentTarget) => void;
@@ -44,8 +47,8 @@ function AssignmentColumn({
 }) {
   return (
     <div
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => onDrop(event, target)}
+      onDragOver={isLocked ? undefined : (event) => event.preventDefault()}
+      onDrop={isLocked ? undefined : (event) => onDrop(event, target)}
       className="min-h-[120px] rounded-[8px] border border-dashed border-court-line bg-white p-3"
     >
       <p className="text-xs font-black uppercase text-court-blue">{title}</p>
@@ -54,54 +57,56 @@ function AssignmentColumn({
           players.map((player) => (
             <div
               key={player.id}
-              draggable
-              onDragStart={(event) => event.dataTransfer.setData("text/plain", player.id)}
+              draggable={!isLocked}
+              onDragStart={isLocked ? undefined : (event) => event.dataTransfer.setData("text/plain", player.id)}
               className="rounded-[8px] border border-court-line bg-court-ice px-3 py-3"
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="truncate text-sm font-black text-court-ink">{player.label}</p>
-                <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-court-blue" />
+                {!isLocked ? <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-court-blue" /> : null}
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {target !== "home" ? (
+              {!isLocked ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {target !== "home" ? (
+                    <button
+                      type="button"
+                      onClick={() => onAssign(player.id, "home")}
+                      disabled={isPending}
+                      className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Tatry
+                    </button>
+                  ) : null}
+                  {target !== "away" ? (
+                    <button
+                      type="button"
+                      onClick={() => onAssign(player.id, "away")}
+                      disabled={isPending}
+                      className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Ostatní
+                    </button>
+                  ) : null}
+                  {target !== "available" ? (
+                    <button
+                      type="button"
+                      onClick={() => onAssign(player.id, "available")}
+                      disabled={isPending}
+                      className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Nepriradený
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => onAssign(player.id, "home")}
+                    onClick={() => onMarkUnavailable(player.id)}
                     disabled={isPending}
-                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-[8px] border border-court-coral px-2 py-1 text-xs font-black text-court-coral transition hover:bg-court-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Tatry
+                    Nejdem
                   </button>
-                ) : null}
-                {target !== "away" ? (
-                  <button
-                    type="button"
-                    onClick={() => onAssign(player.id, "away")}
-                    disabled={isPending}
-                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Ostatní
-                  </button>
-                ) : null}
-                {target !== "available" ? (
-                  <button
-                    type="button"
-                    onClick={() => onAssign(player.id, "available")}
-                    disabled={isPending}
-                    className="rounded-[8px] border border-court-line px-2 py-1 text-xs font-black text-court-blue transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Nepriradený
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => onMarkUnavailable(player.id)}
-                  disabled={isPending}
-                  className="rounded-[8px] border border-court-coral px-2 py-1 text-xs font-black text-court-coral transition hover:bg-court-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Nejdem
-                </button>
-              </div>
+                </div>
+              ) : null}
             </div>
           ))
         ) : (
@@ -119,6 +124,7 @@ export function TeamAssignmentBoard({
   canEmailAdmin = false,
   homeTeamName,
   homeSets = null,
+  isLocked = false,
   matchId,
   matchDateLabel = "",
   matchTitle = "Zápas",
@@ -187,6 +193,10 @@ export function TeamAssignmentBoard({
   }, [adminEmailRecipients, awaySets, awayTeamName, canEmailAdmin, grouped.away, grouped.home, homeSets, homeTeamName, matchDateLabel, matchTitle]);
 
   const assignPlayer = (playerId: string, nextTarget: AssignmentTarget) => {
+    if (isLocked) {
+      return;
+    }
+
     if (!playersById.has(playerId)) {
       return;
     }
@@ -219,12 +229,20 @@ export function TeamAssignmentBoard({
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>, nextTarget: AssignmentTarget) => {
+    if (isLocked) {
+      return;
+    }
+
     event.preventDefault();
     const playerId = event.dataTransfer.getData("text/plain");
     assignPlayer(playerId, nextTarget);
   };
 
   const markUnavailable = (playerId: string) => {
+    if (isLocked) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await submitHomeMatchSignup({
         matchId,
@@ -251,7 +269,9 @@ export function TeamAssignmentBoard({
           <p className="text-sm font-black uppercase text-court-mint">Rozdelenie hráčov</p>
           <h2 className="mt-2 text-xl font-black text-court-ink">Nominácia prihlásených hráčov</h2>
           <p className="mt-2 text-sm leading-6 text-court-blue">
-            Presuň hráča myšou do družstva alebo ho priraď tlačidlom na karte hráča.
+            {isLocked
+              ? "Zápas je ukončený, preto už priradenie hráčov nie je možné meniť."
+              : "Presuň hráča myšou do družstva alebo ho priraď tlačidlom na karte hráča."}
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
@@ -264,7 +284,7 @@ export function TeamAssignmentBoard({
               E-mail vedeniu
             </a>
           ) : null}
-          {hasAssignments ? (
+          {hasAssignments && !isLocked ? (
             <button
               type="button"
               onClick={() =>
@@ -277,11 +297,11 @@ export function TeamAssignmentBoard({
                   )
                 )
               }
-            className="inline-flex items-center gap-2 rounded-[8px] border border-court-line px-3 py-2 text-sm font-black text-court-blue transition hover:bg-court-ice"
-            disabled={isPending}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Obnoviť
+              className="inline-flex items-center gap-2 rounded-[8px] border border-court-line px-3 py-2 text-sm font-black text-court-blue transition hover:bg-court-ice"
+              disabled={isPending}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Obnoviť
             </button>
           ) : null}
         </div>
@@ -302,6 +322,7 @@ export function TeamAssignmentBoard({
                 <AssignmentColumn
                   title="Nepriradení hráči"
                   players={grouped.available}
+                  isLocked={isLocked}
                   onAssign={assignPlayer}
                   onDrop={handleDrop}
                   onMarkUnavailable={markUnavailable}
@@ -313,6 +334,7 @@ export function TeamAssignmentBoard({
                 <AssignmentColumn
                   title="Hráči Tatier"
                   players={grouped.home}
+                  isLocked={isLocked}
                   onAssign={assignPlayer}
                   onDrop={handleDrop}
                   onMarkUnavailable={markUnavailable}
@@ -324,6 +346,7 @@ export function TeamAssignmentBoard({
                 <AssignmentColumn
                   title="Hráči Ostatní"
                   players={grouped.away}
+                  isLocked={isLocked}
                   onAssign={assignPlayer}
                   onDrop={handleDrop}
                   onMarkUnavailable={markUnavailable}
@@ -340,6 +363,7 @@ export function TeamAssignmentBoard({
         <AssignmentColumn
           title="Nepriradení hráči"
           players={grouped.available}
+          isLocked={isLocked}
           onAssign={assignPlayer}
           onDrop={handleDrop}
           onMarkUnavailable={markUnavailable}
@@ -349,6 +373,7 @@ export function TeamAssignmentBoard({
         <AssignmentColumn
           title={homeTeamName}
           players={grouped.home}
+          isLocked={isLocked}
           onAssign={assignPlayer}
           onDrop={handleDrop}
           onMarkUnavailable={markUnavailable}
@@ -358,6 +383,7 @@ export function TeamAssignmentBoard({
         <AssignmentColumn
           title={awayTeamName}
           players={grouped.away}
+          isLocked={isLocked}
           onAssign={assignPlayer}
           onDrop={handleDrop}
           onMarkUnavailable={markUnavailable}

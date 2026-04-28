@@ -42,7 +42,6 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("completed");
-  const [winnerFilter, setWinnerFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -60,13 +59,11 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
         statusFilter?: StatusFilter;
         sortDirection?: "asc" | "desc";
         sortKey?: SortKey;
-        winnerFilter?: string;
       };
 
       setDateFromFilter(parsed.dateFromFilter ?? "");
       setDateToFilter(parsed.dateToFilter ?? "");
       setStatusFilter(parsed.statusFilter ?? "completed");
-      setWinnerFilter(parsed.winnerFilter ?? "");
       setSortKey(parsed.sortKey ?? "date");
       setSortDirection(parsed.sortDirection ?? "desc");
     } catch {
@@ -82,27 +79,13 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
         dateToFilter,
         statusFilter,
         sortDirection,
-        sortKey,
-        winnerFilter
+        sortKey
       })
     );
-  }, [dateFromFilter, dateToFilter, statusFilter, sortDirection, sortKey, winnerFilter]);
-
-  const winnerOptions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          matches
-            .map((match) => getWinningTeamName(match))
-            .filter((value) => value !== "—" && value !== "Remíza")
-        )
-      ).sort((left, right) => left.localeCompare(right, "sk")),
-    [matches]
-  );
+  }, [dateFromFilter, dateToFilter, statusFilter, sortDirection, sortKey]);
 
   const filteredMatches = useMemo(() => {
     return matches.filter((match) => {
-      const winner = getWinningTeamName(match);
       const matchDate = new Date(match.startsAt);
 
       if (dateFromFilter) {
@@ -123,17 +106,13 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
         }
       }
 
-      if (winnerFilter && winner !== winnerFilter) {
-        return false;
-      }
-
       if (statusFilter && match.status !== statusFilter) {
         return false;
       }
 
       return true;
     });
-  }, [dateFromFilter, dateToFilter, statusFilter, winnerFilter, matches]);
+  }, [dateFromFilter, dateToFilter, statusFilter, matches]);
 
   const sortedMatches = useMemo(() => {
     return [...filteredMatches].sort((left, right) => {
@@ -171,7 +150,6 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
     setDateFromFilter("");
     setDateToFilter("");
     setStatusFilter("completed");
-    setWinnerFilter("");
     setSortKey("date");
     setSortDirection("desc");
     window.localStorage.removeItem(STORAGE_KEY);
@@ -180,46 +158,33 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
   return (
     <div className="space-y-4">
       <Card className="sticky top-[76px] z-20 shadow-panel">
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end">
-          <label className="block">
-            <span className="text-xs font-black uppercase text-court-blue">Dátum od</span>
-            <input
-              type="date"
-              value={dateFromFilter}
-              onChange={(event) => setDateFromFilter(event.target.value)}
-              className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-black uppercase text-court-blue">Dátum do</span>
-            <input
-              type="date"
-              value={dateToFilter}
-              onChange={(event) => setDateToFilter(event.target.value)}
-              className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-black uppercase text-court-blue">Víťazné družstvo</span>
-            <select
-              value={winnerFilter}
-              onChange={(event) => setWinnerFilter(event.target.value)}
-              className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
-            >
-              <option value="">Všetky</option>
-              {winnerOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_auto] md:items-end">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <label className="block">
+              <span className="text-xs font-black uppercase text-court-blue">Dátum od</span>
+              <input
+                type="date"
+                value={dateFromFilter}
+                onChange={(event) => setDateFromFilter(event.target.value)}
+                className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-2.5 py-2.5 text-sm font-bold text-court-ink sm:px-3 sm:py-3"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase text-court-blue">Dátum do</span>
+              <input
+                type="date"
+                value={dateToFilter}
+                onChange={(event) => setDateToFilter(event.target.value)}
+                className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-2.5 py-2.5 text-sm font-bold text-court-ink sm:px-3 sm:py-3"
+              />
+            </label>
+          </div>
           <label className="block">
             <span className="text-xs font-black uppercase text-court-blue">Stav zápasu</span>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-              className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
+              className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-2.5 py-2.5 text-sm font-bold text-court-ink sm:px-3 sm:py-3"
             >
               <option value="completed">Ukončené</option>
               <option value="scheduled">Plánované</option>
@@ -298,15 +263,27 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
           <Card key={match.id} className="space-y-3">
             <div className="space-y-2">
               <p className="text-base font-black text-court-ink">{formatMatchDay(match.startsAt)}</p>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <p className="font-bold text-court-blue">Víťaz: <span className="font-black text-court-ink">{getWinningTeamName(match)}</span></p>
-                <p className="font-bold text-court-blue">Sety: <span className="font-black text-court-ink">{getSetsRatio(match)}</span></p>
-                <p className="font-bold text-court-blue">Hráči: <span className="font-black text-court-ink">{match.availablePlayersCount}</span></p>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="rounded-[8px] bg-court-ice px-2 py-2">
+                  <p className="text-[10px] font-black uppercase text-court-blue">Víťaz</p>
+                  <p className="mt-1 truncate text-[11px] font-black text-court-ink">{getWinningTeamName(match)}</p>
+                </div>
+                <div className="rounded-[8px] bg-court-ice px-2 py-2">
+                  <p className="text-[10px] font-black uppercase text-court-blue">Sety</p>
+                  <p className="mt-1 text-[11px] font-black text-court-ink">{getSetsRatio(match)}</p>
+                </div>
+                <div className="rounded-[8px] bg-court-ice px-2 py-2">
+                  <p className="text-[10px] font-black uppercase text-court-blue">Hráči</p>
+                  <p className="mt-1 text-[11px] font-black text-court-ink">{match.availablePlayersCount}</p>
+                </div>
+                <Link
+                  href={`/matches/${match.id}`}
+                  className={buttonClasses({ className: "h-full min-h-[56px] bg-court-cyan px-2 text-[11px] text-court-navy hover:bg-court-mint", variant: "ghost" })}
+                >
+                  Detail
+                </Link>
               </div>
             </div>
-            <Link href={`/matches/${match.id}`} className={buttonClasses({ className: "w-full", variant: "secondary" })}>
-              Detail
-            </Link>
           </Card>
         ))}
 
