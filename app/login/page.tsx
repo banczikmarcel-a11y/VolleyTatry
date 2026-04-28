@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+    <div className="mx-auto grid max-w-5xl gap-5 sm:gap-8 lg:grid-cols-[0.9fr_1.1fr]">
       <QueryToast error={params?.error} message={params?.message} />
       <section className="hidden rounded-[8px] bg-court-ink p-6 text-white shadow-panel lg:flex lg:flex-col lg:justify-between">
         <div>
@@ -53,7 +53,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         isConfigured={config.isConfigured}
         next={params?.next}
       />
-      <p className="mt-5 text-center text-sm text-court-blue">
+      <p className="mt-4 text-center text-sm text-court-blue sm:mt-5">
         Ešte nemáš účet?{" "}
         <Link href="/register" className="font-bold text-court-ink underline decoration-court-mint underline-offset-4">
           Registrácia

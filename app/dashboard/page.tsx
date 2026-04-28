@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <PageHeader eyebrow="Dashboard" title="Tímový prehľad" />
 
       <section className="space-y-4">
@@ -60,12 +60,12 @@ export default async function DashboardPage() {
             <div className="grid gap-4 xl:grid-cols-2">
               {years.map((yearRecord) => (
                 <Card key={yearRecord.year}>
-                  <p className="text-sm font-black uppercase text-court-blue">{yearRecord.year}</p>
-                  <div className="mt-4 space-y-3">
+                  <p className="text-[13px] font-black uppercase text-court-blue sm:text-sm">{yearRecord.year}</p>
+                  <div className="mt-3 space-y-2.5 sm:mt-4 sm:space-y-3">
                     {yearRecord.teams.map((team) => (
-                      <div key={`${yearRecord.year}-${team.slug}`} className="flex items-center justify-between rounded-[8px] bg-court-ice px-4 py-3">
+                      <div key={`${yearRecord.year}-${team.slug}`} className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
                         <p className="font-black text-court-ink">{team.name}</p>
-                        <span className="text-xl font-black text-court-mint">{team.wins}</span>
+                        <span className="text-lg font-black text-court-mint sm:text-xl">{team.wins}</span>
                       </div>
                     ))}
                   </div>
@@ -74,14 +74,14 @@ export default async function DashboardPage() {
             </div>
 
             <Card className="flex flex-col items-center justify-center">
-              <p className="text-sm font-black uppercase text-court-blue">Tatry vs. Ostatní</p>
-              <div className="mt-5 h-44 w-44 rounded-full" style={getPieStyle(totalSummary.tatry, totalSummary.ostatni)} />
-              <div className="mt-5 grid w-full gap-3">
-                <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-4 py-3">
+              <p className="text-[13px] font-black uppercase text-court-blue sm:text-sm">Tatry vs. Ostatní</p>
+              <div className="mt-4 h-36 w-36 rounded-full sm:mt-5 sm:h-44 sm:w-44" style={getPieStyle(totalSummary.tatry, totalSummary.ostatni)} />
+              <div className="mt-4 grid w-full gap-2.5 sm:mt-5 sm:gap-3">
+                <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
                   <p className="font-black text-court-ink">Tatry</p>
                   <span className="font-black text-court-forest">{totalSummary.tatry}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-4 py-3">
+                <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
                   <p className="font-black text-court-ink">Ostatní</p>
                   <span className="font-black text-court-coral">{totalSummary.ostatni}</span>
                 </div>

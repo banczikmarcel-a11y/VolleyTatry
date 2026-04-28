@@ -31,21 +31,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const heroSummary = headToHeadResult.summary;
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-10 sm:space-y-14">
       <QueryToast error={params?.error} message={params?.message} />
 
-      <section className="mx-auto grid max-w-5xl gap-4 rounded-[8px] bg-court-navy p-4 text-white shadow-panel md:grid-cols-[1.05fr_0.95fr] md:p-5">
-        <div className="flex flex-col justify-center gap-6">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase text-court-cyan">
+      <section className="mx-auto grid max-w-5xl gap-3 rounded-[8px] bg-court-navy p-3 text-white shadow-panel md:grid-cols-[1.05fr_0.95fr] md:gap-4 md:p-5">
+        <div className="flex flex-col justify-center gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
+            <p className="text-[13px] font-semibold uppercase text-court-cyan sm:text-sm">
               Volejbal Tatry
             </p>
-            <h1 className="max-w-2xl text-2xl font-black leading-tight sm:text-3xl">
+            <h1 className="max-w-2xl text-xl font-black leading-tight sm:text-3xl">
               Energia pod sieťou, prehľad pre celý tím.
             </h1>
           </div>
         </div>
-        <div className="relative min-h-[160px] overflow-hidden rounded-[8px] border border-white/10">
+        <div className="relative min-h-[140px] overflow-hidden rounded-[8px] border border-white/10 sm:min-h-[160px]">
           <Image
             src="https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&w=1200&q=80"
             alt="Volleyball team preparing on an indoor court"
@@ -55,11 +55,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             className="object-cover"
           />
           <div className="absolute inset-0 bg-court-navy/30" />
-          <div className="absolute bottom-3 left-3 right-3 rounded-[8px] bg-court-navy/85 p-3">
+          <div className="absolute bottom-2.5 left-2.5 right-2.5 rounded-[8px] bg-court-navy/85 p-2.5 sm:bottom-3 sm:left-3 sm:right-3 sm:p-3">
             <p className="text-xs font-black uppercase text-court-cyan">
               {heroSummary ? `${heroSummary.leftName} vs. ${heroSummary.rightName}` : "Tatry vs. Ostatní"}
             </p>
-            <div className="mt-3 space-y-2 text-sm">
+            <div className="mt-2.5 space-y-2 text-[13px] sm:mt-3 sm:text-sm">
               <div className="flex items-center justify-between gap-4">
                 <span className="font-bold text-court-line">Víťazné zápasy</span>
                 <span className="font-black text-white">

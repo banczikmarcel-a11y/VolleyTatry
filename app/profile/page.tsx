@@ -19,7 +19,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   if (!user) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <PageHeader eyebrow="Profil" title="Profil hráča" description="Po prihlásení sa tu zobrazia tvoje údaje a štatistiky." />
         <Card>
           <p className="text-sm font-black uppercase text-court-mint">Bez prihlásenia</p>
@@ -33,7 +33,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   if (!isConfigured) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <PageHeader eyebrow="Profil" title="Profil hráča" description="Profil bude dostupný po pripojení databázy Supabase." />
       </div>
     );
@@ -41,7 +41,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   if (error || !profile) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <PageHeader eyebrow="Profil" title="Profil hráča" description="Nepodarilo sa načítať údaje o prihlásenom používateľovi." />
         <Card className="border-red-200 bg-red-50">
           <p className="text-sm font-bold text-red-700">{error ?? "Profil nebol nájdený."}</p>
@@ -51,7 +51,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <QueryToast error={params?.error} message={params?.message} />
       <PageHeader
         eyebrow="Profil"
@@ -59,7 +59,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         description={profile.teamNames.length > 0 ? `Predvolený tím: ${profile.teamNames[0]}` : "Používateľ zatiaľ nemá priradený aktívny tím."}
       />
 
-      <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <section className="grid gap-4 sm:gap-6 lg:grid-cols-[320px_1fr]">
         <Card className="space-y-4 bg-court-navy text-white">
           <div>
             <p className="text-sm font-black uppercase text-court-mint">Prihlásený používateľ</p>
@@ -73,19 +73,19 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 name="email"
                 type="email"
                 defaultValue={profile.email ?? ""}
-                className="focus-ring mt-2 w-full rounded-[8px] border border-white/15 bg-white/10 px-3 py-3 text-sm font-bold text-white"
+                className="focus-ring mt-1.5 w-full rounded-[8px] border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-bold text-white sm:mt-2 sm:py-3"
                 placeholder="tvoj@email.sk"
                 required
               />
             </label>
             <button
               type="submit"
-              className="focus-ring w-full rounded-[8px] bg-court-mint px-3 py-3 text-sm font-black text-court-ink transition hover:bg-white"
+              className="focus-ring w-full rounded-[8px] bg-court-mint px-3 py-2.5 text-sm font-black text-court-ink transition hover:bg-white sm:py-3"
             >
               Uložiť e-mail
             </button>
           </form>
-          <div className="rounded-[8px] bg-white/10 p-4">
+          <div className="rounded-[8px] bg-white/10 p-3 sm:p-4">
             <p className="text-xs font-black uppercase text-court-line">Predvolený tím</p>
             <p className="mt-2 text-sm font-bold">{profile.teamNames.length > 0 ? profile.teamNames[0] : "Bez tímu"}</p>
           </div>

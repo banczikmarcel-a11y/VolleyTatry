@@ -14,18 +14,18 @@ export function PlayerProfileStats({
   yearlyTitle = "Výsledky hráča"
 }: PlayerProfileStatsProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Card>
         <p className="text-sm font-black uppercase text-court-mint">Ročná štatistika</p>
-        <h2 className="mt-2 text-2xl font-black text-court-ink">{yearlyTitle}</h2>
+        <h2 className="mt-2 text-xl font-black text-court-ink sm:text-2xl">{yearlyTitle}</h2>
 
         {profile.yearlyStats.length > 0 ? (
-          <div className="mt-5 space-y-4">
+          <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
             {profile.yearlyStats.map((year) => (
-              <div key={year.year} className="rounded-[8px] bg-court-ice p-4">
-                <p className="text-sm font-black uppercase text-court-blue">{year.year}</p>
+              <div key={year.year} className="rounded-[8px] bg-court-ice p-3 sm:p-4">
+                <p className="text-[13px] font-black uppercase text-court-blue sm:text-sm">{year.year}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[8px] bg-white p-4">
+                  <div className="rounded-[8px] bg-white p-3 sm:p-4">
                     <p className="text-xs font-black uppercase text-court-blue">Zápasy</p>
                     <p className="mt-2 text-sm font-black text-court-ink">
                       {year.wins} výhry / {year.losses} prehry
@@ -34,7 +34,7 @@ export function PlayerProfileStats({
                       {year.winRate}% výhra / {year.lossRate}% prehra
                     </p>
                   </div>
-                  <div className="rounded-[8px] bg-white p-4">
+                  <div className="rounded-[8px] bg-white p-3 sm:p-4">
                     <p className="text-xs font-black uppercase text-court-blue">Sety</p>
                     <p className="mt-2 text-sm font-black text-court-ink">
                       {year.wonSets} víťazné / {year.lostSets} prehraté
@@ -53,15 +53,15 @@ export function PlayerProfileStats({
       </Card>
 
       <Card className="p-0">
-        <div className="border-b border-court-line px-5 py-5">
+        <div className="border-b border-court-line px-4 py-4 sm:px-5 sm:py-5">
           <p className="text-sm font-black uppercase text-court-mint">História zápasov</p>
-          <h2 className="mt-2 text-2xl font-black text-court-ink">Zápasy s účasťou hráča</h2>
+          <h2 className="mt-2 text-xl font-black text-court-ink sm:text-2xl">Zápasy s účasťou hráča</h2>
         </div>
 
         {profile.history.length > 0 ? (
           <PlayerHistoryTable matches={profile.history} />
         ) : (
-          <div className="px-5 py-5">
+          <div className="px-4 py-4 sm:px-5 sm:py-5">
             <p className="text-sm leading-6 text-court-blue">{emptyHistoryText}</p>
           </div>
         )}

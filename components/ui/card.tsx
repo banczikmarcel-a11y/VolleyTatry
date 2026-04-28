@@ -8,7 +8,7 @@ type CardProps = HTMLAttributes<HTMLElement> & {
 export function Card({ as: Component = "div", className, ...props }: CardProps) {
   return (
     <Component
-      className={cn("rounded-[8px] border border-court-line bg-white p-5 shadow-sm", className)}
+      className={cn("rounded-[8px] border border-court-line bg-white p-4 shadow-sm sm:p-5", className)}
       {...props}
     />
   );
@@ -17,7 +17,7 @@ export function Card({ as: Component = "div", className, ...props }: CardProps) 
 export function FormCard({ className, ...props }: FormHTMLAttributes<HTMLFormElement>) {
   return (
     <form
-      className={cn("rounded-[8px] border border-court-line bg-white p-5 shadow-sm", className)}
+      className={cn("rounded-[8px] border border-court-line bg-white p-4 shadow-sm sm:p-5", className)}
       {...props}
     />
   );

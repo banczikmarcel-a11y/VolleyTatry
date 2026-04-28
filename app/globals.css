@@ -24,6 +24,18 @@ body {
   color: var(--foreground);
 }
 
+@media (max-width: 420px) {
+  html {
+    font-size: 15px;
+  }
+
+  body {
+    background:
+      linear-gradient(180deg, rgba(24, 199, 167, 0.08), transparent 280px),
+      var(--background);
+  }
+}
+
 button,
 input,
 select,

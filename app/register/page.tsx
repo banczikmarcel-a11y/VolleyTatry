@@ -22,7 +22,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="mx-auto grid max-w-5xl gap-5 sm:gap-8 lg:grid-cols-[1.1fr_0.9fr]">
       <QueryToast error={params?.error} message={params?.message} />
       <div>
       <AuthForm
@@ -35,7 +35,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         message={params?.message}
         isConfigured={config.isConfigured}
       />
-      <p className="mt-5 text-center text-sm text-court-blue">
+      <p className="mt-4 text-center text-sm text-court-blue sm:mt-5">
         Už máš účet?{" "}
         <Link href="/login" className="font-bold text-court-ink underline decoration-court-mint underline-offset-4">
           Prihlásenie

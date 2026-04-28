@@ -7,9 +7,9 @@ type PageHeaderProps = {
 export function PageHeader({ eyebrow, title, description }: PageHeaderProps) {
   return (
     <header className="max-w-3xl">
-      <p className="text-sm font-black uppercase text-court-mint">{eyebrow}</p>
-      <h1 className="mt-2 text-3xl font-black leading-tight text-court-ink sm:text-4xl">{title}</h1>
-      {description ? <p className="mt-3 text-base leading-7 text-court-blue">{description}</p> : null}
+      <p className="text-[13px] font-black uppercase text-court-mint sm:text-sm">{eyebrow}</p>
+      <h1 className="mt-1.5 text-2xl font-black leading-tight text-court-ink sm:mt-2 sm:text-4xl">{title}</h1>
+      {description ? <p className="mt-2 text-sm leading-6 text-court-blue sm:mt-3 sm:text-base sm:leading-7">{description}</p> : null}
     </header>
   );
 }

@@ -55,7 +55,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   const selectedPlayerError = playerProfileResult.error;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       <div className="flex flex-col gap-3">
         <PageHeader
           eyebrow="Stats"
@@ -70,7 +70,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         />
       </div>
 
-      <div className="inline-flex rounded-[8px] border border-court-line bg-white p-1">
+      <div className="inline-flex rounded-[8px] border border-court-line bg-white p-0.5 sm:p-1">
         <Link href="/stats" className={buttonClasses({ className: view === "team" ? "" : "bg-transparent", variant: view === "team" ? "primary" : "ghost" })}>
           Tímová bilancia
         </Link>
@@ -90,7 +90,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
       {view === "player" ? (
         <>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <PlayerStatsPicker players={players} selectedPlayerId={selectedPlayerId} />
           </Card>
 
@@ -177,7 +177,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         </>
       ) : (
         <>
-      <Card className="p-4">
+      <Card className="p-3 sm:p-4">
         <div className="space-y-3">
           <div>
             <p className="flex items-center gap-2 text-sm font-black uppercase text-court-mint">

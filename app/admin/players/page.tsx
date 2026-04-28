@@ -23,7 +23,7 @@ export default async function AdminPlayersPage({ searchParams }: AdminPlayersPag
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <QueryToast error={params?.error} message={params?.message} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <PageHeader eyebrow="Admin" title="Správa hráčov" />

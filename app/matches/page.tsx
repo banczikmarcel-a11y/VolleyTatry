@@ -24,12 +24,12 @@ export default async function MatchesPage({ searchParams }: MatchesPageProps) {
   const view = params?.view === "card" ? "card" : "list";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <QueryToast error={params?.error} message={params?.message} />
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader eyebrow="Zápasy" title="Zápasový kalendár" description="Prehľad termínov, miest a tímov s rýchlou cestou k potvrdeniu účasti." />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="inline-flex rounded-[8px] border border-court-line bg-white p-1">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
+          <div className="inline-flex rounded-[8px] border border-court-line bg-white p-0.5 sm:p-1">
             <Link href="/matches?view=list" className={buttonClasses({ className: view === "list" ? "" : "bg-transparent", variant: view === "list" ? "primary" : "ghost" })}>
               Zoznam
             </Link>

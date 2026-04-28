@@ -30,16 +30,16 @@ export async function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-court-line bg-white/95 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" className="focus-ring flex items-center gap-3 rounded-[8px]">
-            <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-court-ink text-court-mint">
-              <Dumbbell className="h-5 w-5" />
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
+          <Link href="/" className="focus-ring flex items-center gap-2 rounded-[8px] sm:gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-court-ink text-court-mint sm:h-10 sm:w-10">
+              <Dumbbell className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
             <span>
-              <span className="block text-sm font-black uppercase text-court-ink">
+              <span className="block text-[13px] font-black uppercase leading-none text-court-ink sm:text-sm">
                 Volejbal
               </span>
-              <span className="block text-xs font-bold text-court-blue">Tatry</span>
+              <span className="block text-[11px] font-bold leading-none text-court-blue sm:text-xs">Tatry</span>
             </span>
           </Link>
 
@@ -91,7 +91,7 @@ export async function AppShell({ children }: AppShellProps) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">{children}</main>
     </div>
   );
 }
