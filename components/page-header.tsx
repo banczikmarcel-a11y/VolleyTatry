@@ -20,9 +20,9 @@ export function PageHeader({ eyebrow, title, description, homeHref, inline = fal
       ) : null}
       {inline ? (
         <div className={cn("flex flex-wrap items-baseline gap-2", homeHref ? "mt-2" : "")}>
-          <p className="text-[13px] font-black uppercase text-court-mint sm:text-sm">{eyebrow}</p>
-          <span className="text-sm font-black text-court-blue">&gt;</span>
-          <h1 className="text-xl font-black leading-tight text-court-ink sm:text-3xl">{title}</h1>
+          <p className="text-lg font-black uppercase leading-tight text-court-ink sm:text-2xl">{eyebrow}</p>
+          <span className="text-lg font-black leading-tight text-court-ink sm:text-2xl">&gt;</span>
+          <h1 className="text-lg font-black leading-tight text-court-ink sm:text-2xl">{title}</h1>
         </div>
       ) : (
         <>

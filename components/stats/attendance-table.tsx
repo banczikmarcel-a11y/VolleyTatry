@@ -65,7 +65,7 @@ export function AttendanceTable({ rows }: AttendanceTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-[980px] w-full border-collapse text-left">
-        <thead className="bg-court-ice">
+        <thead className="sticky top-0 z-10 bg-court-ice">
           <tr className="border-b border-court-line">
             <th className="sticky left-0 bg-court-ice px-3 py-3">
               <SortHeader active={sortKey === "playerName"} direction={sortDirection} onClick={() => handleSort("playerName")}>
@@ -87,13 +87,13 @@ export function AttendanceTable({ rows }: AttendanceTableProps) {
         <tbody className="divide-y divide-court-line">
           {sortedRows.map((row) => (
             <tr key={row.playerId}>
-              <td className="sticky left-0 bg-white px-3 py-3 text-sm font-black text-court-ink">{row.playerName}</td>
+              <td className="sticky left-0 bg-white px-3 py-3 text-sm font-black text-court-ink">{row.sortLabel}</td>
               {row.monthly.map((count, index) => (
                 <td key={index} className="px-3 py-3 text-center text-sm font-bold text-court-blue">
-                  {count}
+                  {count === 0 ? "" : count}
                 </td>
               ))}
-              <td className="px-3 py-3 text-center text-sm font-black text-court-ink">{row.total}</td>
+              <td className="px-3 py-3 text-center text-sm font-black text-court-ink">{row.total === 0 ? "" : row.total}</td>
             </tr>
           ))}
         </tbody>

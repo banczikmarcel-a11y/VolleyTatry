@@ -46,12 +46,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader eyebrow="Dashboard" title="Tímový prehľad" homeHref="/" />
-
       <section className="space-y-4">
         <div>
-          <p className="text-sm font-black uppercase text-court-mint">Výhry po rokoch</p>
-          <h2 className="mt-2 text-2xl font-black text-court-ink">Tatry vs. Ostatní</h2>
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-lg font-black uppercase leading-tight text-court-ink sm:text-2xl">Výhry po rokoch</p>
+            <span className="text-lg font-black leading-tight text-court-ink sm:text-2xl">-</span>
+            <h2 className="text-lg font-black leading-tight text-court-ink sm:text-2xl">Tatry vs. Ostatní</h2>
+          </div>
         </div>
 
         {yearlyWinsError ? (

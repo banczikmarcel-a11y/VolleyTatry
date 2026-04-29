@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { formatMatchDay } from "@/lib/match-display";
 import type { PlayerMatchHistory } from "@/lib/profile";
 import { cn } from "@/lib/utils";
@@ -77,11 +78,23 @@ export function PlayerHistoryTable({ matches }: PlayerHistoryTableProps) {
     setSortDirection(nextKey === "date" ? "desc" : "asc");
   }
 
+  function getResultTone(result: string) {
+    if (result === "Výhra") {
+      return "mint" as const;
+    }
+
+    if (result === "Prehra") {
+      return "coral" as const;
+    }
+
+    return "neutral" as const;
+  }
+
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
         <table className="min-w-[660px] w-full border-collapse text-left">
-          <thead className="bg-court-ice">
+          <thead className="sticky top-0 z-10 bg-court-ice">
             <tr className="border-b border-court-line">
               <th className="px-4 py-3">
                 <SortHeader active={sortKey === "date"} direction={sortDirection} onClick={() => handleSort("date")}>
@@ -110,7 +123,9 @@ export function PlayerHistoryTable({ matches }: PlayerHistoryTableProps) {
               <tr key={match.id}>
                 <td className="px-4 py-3 text-sm font-bold text-court-ink">{formatMatchDay(match.date)}</td>
                 <td className="px-4 py-3 text-sm font-black text-court-ink">{match.teamName}</td>
-                <td className="px-4 py-3 text-sm font-black text-court-blue">{match.result}</td>
+                <td className="px-4 py-3 text-sm font-black text-court-blue">
+                  <Badge tone={getResultTone(match.result)}>{match.result}</Badge>
+                </td>
                 <td className="px-4 py-3 text-sm font-black text-court-blue">{match.sets}</td>
               </tr>
             ))}
@@ -126,7 +141,9 @@ export function PlayerHistoryTable({ matches }: PlayerHistoryTableProps) {
             <div className="mt-2.5 grid grid-cols-2 gap-2.5 text-sm">
               <div>
                 <p className="text-xs font-black uppercase text-court-blue">Výsledok</p>
-                <p className="mt-1 font-black text-court-ink">{match.result}</p>
+                <div className="mt-1">
+                  <Badge tone={getResultTone(match.result)}>{match.result}</Badge>
+                </div>
               </div>
               <div>
                 <p className="text-xs font-black uppercase text-court-blue">Sety</p>

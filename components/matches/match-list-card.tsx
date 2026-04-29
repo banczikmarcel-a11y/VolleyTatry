@@ -19,23 +19,21 @@ const statusTone = {
 } as const;
 
 export function MatchListCard({ children, match }: MatchListCardProps) {
-  const resultTone = getMatchResultState(match.homeSets, match.awaySets);
+  const resultTone = getMatchResultState(match.homeSets, match.awaySets, match.team?.name, match.opponent?.name);
   const hasResult = match.homeSets !== null && match.awaySets !== null;
 
   return (
     <Card as="article" className="flex flex-col gap-4 sm:gap-5">
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-lg font-black text-court-ink sm:text-xl">{formatMatchDay(match.startsAt)}</p>
-            <h2 className="mt-2 text-center text-xl font-black text-court-ink">{match.title}</h2>
-          </div>
+          <p className="text-lg font-black text-court-ink sm:text-xl">{formatMatchDay(match.startsAt)}</p>
           <div className="flex shrink-0 flex-col items-end gap-3">
             <span className="rounded-[8px] bg-court-mint/20 px-2 py-1 text-right text-xs font-black uppercase text-court-forest">
               {match.availablePlayersCount} {formatPlayersCountLabel(match.availablePlayersCount)}
             </span>
           </div>
         </div>
+        <h2 className="text-center text-xl font-black text-court-ink">{match.title}</h2>
 
         <div className="flex items-center justify-between gap-3">
           <Badge tone={statusTone[match.status]}>{formatMatchStatus(match.status)}</Badge>

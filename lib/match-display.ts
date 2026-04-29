@@ -30,7 +30,7 @@ export function formatMatchDay(value: string) {
   }).format(new Date(value));
 }
 
-export function getMatchResultState(homeSets: number | null, awaySets: number | null): MatchResultState {
+export function getMatchResultState(homeSets: number | null, awaySets: number | null, homeTeamName?: string | null, awayTeamName?: string | null): MatchResultState {
   if (homeSets === null || awaySets === null) {
     return {
       awayClassName: "text-court-ink",
@@ -43,7 +43,7 @@ export function getMatchResultState(homeSets: number | null, awaySets: number | 
     return {
       awayClassName: "text-red-600",
       homeClassName: "text-green-600",
-      label: "Výhra domácich"
+      label: `Výhra ${homeTeamName ?? "domácich"}`
     };
   }
 
@@ -51,7 +51,7 @@ export function getMatchResultState(homeSets: number | null, awaySets: number | 
     return {
       awayClassName: "text-green-600",
       homeClassName: "text-red-600",
-      label: "Výhra hostí"
+      label: `Výhra ${awayTeamName ?? "hostí"}`
     };
   }
 

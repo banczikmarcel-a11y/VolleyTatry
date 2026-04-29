@@ -28,13 +28,13 @@ export function PlayerStatsPicker({ players, selectedPlayerId }: PlayerStatsPick
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <label className="min-w-[220px] flex-1">
-        <span className="text-sm font-bold text-court-ink">Hráč</span>
+    <div className="flex flex-wrap items-center gap-3">
+      <label className="flex min-w-[280px] flex-1 items-center gap-3">
+        <span className="shrink-0 text-sm font-bold text-court-ink">Hráč</span>
         <select
           value={selectedPlayerId ?? ""}
           onChange={(event) => pushSelection(event.target.value)}
-          className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-2.5 text-sm font-bold text-court-ink"
+          className="focus-ring w-full rounded-[8px] border border-court-line bg-white px-3 py-2.5 text-sm font-bold text-court-ink"
         >
           <option value="">Vyber hráča</option>
           {players.map((player) => (

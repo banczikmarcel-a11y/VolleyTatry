@@ -60,13 +60,12 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         <PageHeader
           eyebrow="Stats"
           title={view === "player" ? "Štatistika hráča" : view === "attendance" ? "Účasť" : "Tímová bilancia"}
-          homeHref="/"
-          inline={view === "player"}
+          inline={view === "player" || view === "attendance"}
           description={
             view === "player"
               ? undefined
               : view === "attendance"
-                ? "Mesačný prehľad potvrdenej účasti hráčov v ukončených zápasoch."
+                ? undefined
                 : "Výhry a prehry podľa tímu, filtrované podľa sezóny. Počítajú sa iba ukončené zápasy."
           }
         />
@@ -131,14 +130,11 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       ) : view === "attendance" ? (
         <>
           <Card className="p-3">
-            <div className="space-y-3">
-              <div>
-                <p className="flex items-center gap-2 text-sm font-black uppercase text-court-mint">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="flex items-center gap-2 text-sm font-black uppercase text-court-mint">
                   <Filter className="h-4 w-4" />
                   Rok
-                </p>
-                <h2 className="mt-2 text-lg font-black text-court-ink">Účasť hráčov - {attendanceResult.selectedYear}</h2>
-              </div>
+              </p>
               <div className="flex flex-wrap gap-2">
                 {attendanceResult.years.map((year) => (
                   <Link
