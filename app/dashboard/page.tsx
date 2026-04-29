@@ -2,12 +2,25 @@ import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { getYearlyWins } from "@/lib/stats";
 
+const TEAM_COLORS = {
+  ostatni: {
+    chart: "#ff8f6b",
+    row: "bg-court-coral/10",
+    text: "text-court-coral"
+  },
+  tatry: {
+    chart: "#18c7a7",
+    row: "bg-court-mint/15",
+    text: "text-court-forest"
+  }
+} as const;
+
 function getPieStyle(leftWins: number, rightWins: number) {
   const total = leftWins + rightWins;
   const leftRatio = total === 0 ? 50 : Math.round((leftWins / total) * 100);
 
   return {
-    background: `conic-gradient(#18c7a7 0 ${leftRatio}%, #ff8f6b ${leftRatio}% 100%)`
+    background: `conic-gradient(${TEAM_COLORS.tatry.chart} 0 ${leftRatio}%, ${TEAM_COLORS.ostatni.chart} ${leftRatio}% 100%)`
   };
 }
 
@@ -33,12 +46,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader eyebrow="Dashboard" title="Tímový prehľad" />
+      <PageHeader eyebrow="Dashboard" title="Tímový prehľad" homeHref="/" />
 
       <section className="space-y-4">
         <div>
           <p className="text-sm font-black uppercase text-court-mint">Výhry po rokoch</p>
-          <h2 className="mt-2 text-2xl font-black text-court-ink">Počet víťazných zápasov</h2>
+          <h2 className="mt-2 text-2xl font-black text-court-ink">Tatry vs. Ostatní</h2>
         </div>
 
         {yearlyWinsError ? (
@@ -63,9 +76,12 @@ export default async function DashboardPage() {
                   <p className="text-[13px] font-black uppercase text-court-blue sm:text-sm">{yearRecord.year}</p>
                   <div className="mt-3 space-y-2.5 sm:mt-4 sm:space-y-3">
                     {yearRecord.teams.map((team) => (
-                      <div key={`${yearRecord.year}-${team.slug}`} className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
+                      <div
+                        key={`${yearRecord.year}-${team.slug}`}
+                        className={`flex items-center justify-between rounded-[8px] px-3 py-2.5 sm:px-4 sm:py-3 ${team.slug === "tatry" ? TEAM_COLORS.tatry.row : TEAM_COLORS.ostatni.row}`}
+                      >
                         <p className="font-black text-court-ink">{team.name}</p>
-                        <span className="text-lg font-black text-court-mint sm:text-xl">{team.wins}</span>
+                        <span className={`text-lg font-black sm:text-xl ${team.slug === "tatry" ? TEAM_COLORS.tatry.text : TEAM_COLORS.ostatni.text}`}>{team.wins}</span>
                       </div>
                     ))}
                   </div>
@@ -79,11 +95,11 @@ export default async function DashboardPage() {
               <div className="mt-4 grid w-full gap-2.5 sm:mt-5 sm:gap-3">
                 <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
                   <p className="font-black text-court-ink">Tatry</p>
-                  <span className="font-black text-court-forest">{totalSummary.tatry}</span>
+                  <span className={`font-black ${TEAM_COLORS.tatry.text}`}>{totalSummary.tatry}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-[8px] bg-court-ice px-3 py-2.5 sm:px-4 sm:py-3">
                   <p className="font-black text-court-ink">Ostatní</p>
-                  <span className="font-black text-court-coral">{totalSummary.ostatni}</span>
+                  <span className={`font-black ${TEAM_COLORS.ostatni.text}`}>{totalSummary.ostatni}</span>
                 </div>
               </div>
             </Card>

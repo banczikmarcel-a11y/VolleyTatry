@@ -20,7 +20,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   if (!user) {
     return (
       <div className="space-y-6 sm:space-y-8">
-        <PageHeader eyebrow="Profil" title="Profil hráča" description="Po prihlásení sa tu zobrazia tvoje údaje a štatistiky." />
+        <PageHeader eyebrow="Profil" title="Profil hráča" description="Po prihlásení sa tu zobrazia tvoje údaje a štatistiky." homeHref="/" />
         <Card>
           <p className="text-sm font-black uppercase text-court-mint">Bez prihlásenia</p>
           <p className="mt-2 text-sm leading-6 text-court-blue">Prihlás sa a otvor si svoj hráčsky profil.</p>
@@ -34,7 +34,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   if (!isConfigured) {
     return (
       <div className="space-y-6 sm:space-y-8">
-        <PageHeader eyebrow="Profil" title="Profil hráča" description="Profil bude dostupný po pripojení databázy Supabase." />
+        <PageHeader eyebrow="Profil" title="Profil hráča" description="Profil bude dostupný po pripojení databázy Supabase." homeHref="/" />
       </div>
     );
   }
@@ -42,7 +42,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   if (error || !profile) {
     return (
       <div className="space-y-6 sm:space-y-8">
-        <PageHeader eyebrow="Profil" title="Profil hráča" description="Nepodarilo sa načítať údaje o prihlásenom používateľovi." />
+        <PageHeader eyebrow="Profil" title="Profil hráča" description="Nepodarilo sa načítať údaje o prihlásenom používateľovi." homeHref="/" />
         <Card className="border-red-200 bg-red-50">
           <p className="text-sm font-bold text-red-700">{error ?? "Profil nebol nájdený."}</p>
         </Card>
@@ -56,6 +56,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       <PageHeader
         eyebrow="Profil"
         title={profile.fullName}
+        homeHref="/"
         description={profile.teamNames.length > 0 ? `Predvolený tím: ${profile.teamNames[0]}` : "Používateľ zatiaľ nemá priradený aktívny tím."}
       />
 

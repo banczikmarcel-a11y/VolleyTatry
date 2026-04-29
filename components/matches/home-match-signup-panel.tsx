@@ -81,7 +81,7 @@ export function HomeMatchSignupPanel({
         {isCurrentUserSignedUp ? "Odhlásiť ma" : "Prihlásiť ma"}
       </Button>
 
-      <div className="space-y-3">
+      <div className="space-y-3 rounded-[8px] bg-court-ice p-3">
         <PlayerCombobox
           inputName="profileId"
           label="Prihlásiť iného hráča"

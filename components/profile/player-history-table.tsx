@@ -80,25 +80,25 @@ export function PlayerHistoryTable({ matches }: PlayerHistoryTableProps) {
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-[720px] w-full border-collapse text-left">
+        <table className="min-w-[660px] w-full border-collapse text-left">
           <thead className="bg-court-ice">
             <tr className="border-b border-court-line">
-              <th className="px-5 py-4">
+              <th className="px-4 py-3">
                 <SortHeader active={sortKey === "date"} direction={sortDirection} onClick={() => handleSort("date")}>
                   Dátum
                 </SortHeader>
               </th>
-              <th className="px-5 py-4">
+              <th className="px-4 py-3">
                 <SortHeader active={sortKey === "teamName"} direction={sortDirection} onClick={() => handleSort("teamName")}>
                   Družstvo
                 </SortHeader>
               </th>
-              <th className="px-5 py-4">
+              <th className="px-4 py-3">
                 <SortHeader active={sortKey === "result"} direction={sortDirection} onClick={() => handleSort("result")}>
                   Výsledok
                 </SortHeader>
               </th>
-              <th className="px-5 py-4">
+              <th className="px-4 py-3">
                 <SortHeader active={sortKey === "sets"} direction={sortDirection} onClick={() => handleSort("sets")}>
                   Sety
                 </SortHeader>
@@ -108,22 +108,22 @@ export function PlayerHistoryTable({ matches }: PlayerHistoryTableProps) {
           <tbody className="divide-y divide-court-line">
             {sortedMatches.map((match) => (
               <tr key={match.id}>
-                <td className="px-5 py-4 text-sm font-bold text-court-ink">{formatMatchDay(match.date)}</td>
-                <td className="px-5 py-4 text-sm font-black text-court-ink">{match.teamName}</td>
-                <td className="px-5 py-4 text-sm font-black text-court-blue">{match.result}</td>
-                <td className="px-5 py-4 text-sm font-black text-court-blue">{match.sets}</td>
+                <td className="px-4 py-3 text-sm font-bold text-court-ink">{formatMatchDay(match.date)}</td>
+                <td className="px-4 py-3 text-sm font-black text-court-ink">{match.teamName}</td>
+                <td className="px-4 py-3 text-sm font-black text-court-blue">{match.result}</td>
+                <td className="px-4 py-3 text-sm font-black text-court-blue">{match.sets}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="grid gap-3 p-4 md:hidden">
+      <div className="grid gap-2.5 p-3 md:hidden">
         {sortedMatches.map((match) => (
-          <div key={match.id} className="rounded-[8px] border border-court-line bg-court-ice p-4">
+          <div key={match.id} className="rounded-[8px] border border-court-line bg-court-ice p-3">
             <p className="text-xs font-black uppercase text-court-blue">{formatMatchDay(match.date)}</p>
-            <p className="mt-2 text-base font-black text-court-ink">{match.teamName}</p>
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <p className="mt-1.5 text-sm font-black text-court-ink">{match.teamName}</p>
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5 text-sm">
               <div>
                 <p className="text-xs font-black uppercase text-court-blue">Výsledok</p>
                 <p className="mt-1 font-black text-court-ink">{match.result}</p>

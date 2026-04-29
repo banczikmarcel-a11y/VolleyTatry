@@ -56,19 +56,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           />
           <div className="absolute inset-0 bg-court-navy/30" />
           <div className="absolute bottom-2.5 left-2.5 right-2.5 rounded-[8px] bg-court-navy/85 p-2.5 sm:bottom-3 sm:left-3 sm:right-3 sm:p-3">
-            <p className="text-xs font-black uppercase text-court-cyan">
+            <p className="text-sm font-black uppercase tracking-wide text-court-cyan sm:text-base">
               {heroSummary ? `${heroSummary.leftName} vs. ${heroSummary.rightName}` : "Tatry vs. Ostatní"}
             </p>
-            <div className="mt-2.5 space-y-2 text-[13px] sm:mt-3 sm:text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="font-bold text-court-line">Víťazné zápasy</span>
-                <span className="font-black text-white">
+            <div className="mt-3 rounded-[8px] bg-white/8 p-2.5 sm:p-3">
+              <div className="grid grid-cols-2 gap-3 text-[13px] sm:text-sm">
+                <span className="font-black uppercase tracking-wide text-court-line">Víťazné zápasy</span>
+                <span className="text-right text-lg font-black text-white sm:text-xl">
                   {heroSummary ? `${heroSummary.leftWins} - ${heroSummary.rightWins}` : "-"}
                 </span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="font-bold text-court-line">Víťazné sety</span>
-                <span className="font-black text-white">
+                <span className="font-black uppercase tracking-wide text-court-line">Víťazné sety</span>
+                <span className="text-right text-lg font-black text-white sm:text-xl">
                   {heroSummary ? `${heroSummary.leftSetWins} - ${heroSummary.rightSetWins}` : "-"}
                 </span>
               </div>
@@ -82,6 +80,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <PageHeader
             eyebrow="Program"
             title="Najbližšie zápasy"
+            inline
           />
           {adminState.isAdmin ? (
             <Link href="/admin/matches/new" className={buttonClasses({ variant: "secondary" })}>
@@ -133,7 +132,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <PageHeader eyebrow="Výsledky" title="Posledné zápasy" />
+          <PageHeader eyebrow="Výsledky" title="Posledné zápasy" inline />
           <Link href="/matches" className={buttonClasses({ variant: "secondary" })}>
             Zápasy
           </Link>

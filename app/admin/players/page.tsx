@@ -26,7 +26,7 @@ export default async function AdminPlayersPage({ searchParams }: AdminPlayersPag
     <div className="space-y-6 sm:space-y-8">
       <QueryToast error={params?.error} message={params?.message} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <PageHeader eyebrow="Admin" title="Správa hráčov" />
+        <PageHeader eyebrow="Admin" title="Správa hráčov" homeHref="/" inline />
         <div className="flex items-center gap-3">
           {teams.length > 0 ? <CreatePlayerForm teams={teams} /> : null}
           <Link href="/matches" className="text-sm font-black text-court-ink underline decoration-court-mint underline-offset-4">

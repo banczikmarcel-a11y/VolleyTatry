@@ -28,7 +28,7 @@ export function MatchListCard({ children, match }: MatchListCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-lg font-black text-court-ink sm:text-xl">{formatMatchDay(match.startsAt)}</p>
-            <h2 className="mt-2 text-xl font-black text-court-ink">{match.title}</h2>
+            <h2 className="mt-2 text-center text-xl font-black text-court-ink">{match.title}</h2>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-3">
             <span className="rounded-[8px] bg-court-mint/20 px-2 py-1 text-right text-xs font-black uppercase text-court-forest">
@@ -57,14 +57,8 @@ export function MatchListCard({ children, match }: MatchListCardProps) {
         ) : null}
       </div>
 
-      <div className="space-y-3 rounded-[8px] bg-court-ice p-3">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
-          <p className={`truncate text-sm font-black ${match.homeSets === null && match.awaySets === null ? "text-court-ink" : resultTone.homeClassName}`}>{match.team?.name ?? "Domáci"}</p>
-          <span className="text-xs font-black uppercase text-court-blue">vs</span>
-          <p className={`truncate text-sm font-black ${match.homeSets === null && match.awaySets === null ? "text-court-ink" : resultTone.awayClassName}`}>{match.opponent?.name ?? "Súper"}</p>
-        </div>
-
-        {hasResult ? (
+      {hasResult ? (
+        <div className="rounded-[8px] bg-court-ice p-3">
           <div className="rounded-[8px] border border-court-line bg-white px-3 py-4 text-center">
             <p className="text-[11px] font-black uppercase tracking-wide text-court-blue">Výsledok</p>
             <p className="mt-2 text-3xl font-black text-court-ink">
@@ -74,8 +68,8 @@ export function MatchListCard({ children, match }: MatchListCardProps) {
               {resultTone.label}
             </p>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {children}
     </Card>

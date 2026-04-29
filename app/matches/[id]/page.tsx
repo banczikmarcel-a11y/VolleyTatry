@@ -69,9 +69,14 @@ export default async function MatchDetailPage({ params, searchParams }: MatchDet
   return (
     <div className="space-y-8">
       <QueryToast error={query?.error} message={query?.message} />
-      <Link href="/matches" className="text-sm font-black text-court-ink underline decoration-court-mint underline-offset-4">
-        Späť na zápasy
-      </Link>
+      <div className="flex gap-4 text-sm font-black">
+        <Link href="/" className="text-court-blue underline decoration-court-mint underline-offset-4">
+          Domov
+        </Link>
+        <Link href="/matches" className="text-court-ink underline decoration-court-mint underline-offset-4">
+          Späť na zápasy
+        </Link>
+      </div>
 
       <section className="overflow-hidden rounded-[8px] bg-court-ink text-white shadow-panel">
         <div className="grid gap-4 p-3 sm:p-4 md:p-5">

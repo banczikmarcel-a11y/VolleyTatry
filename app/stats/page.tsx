@@ -60,9 +60,11 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         <PageHeader
           eyebrow="Stats"
           title={view === "player" ? "Štatistika hráča" : view === "attendance" ? "Účasť" : "Tímová bilancia"}
+          homeHref="/"
+          inline={view === "player"}
           description={
             view === "player"
-              ? "Po výbere hráča sa zobrazí ročná bilancia a história jeho zápasov."
+              ? undefined
               : view === "attendance"
                 ? "Mesačný prehľad potvrdenej účasti hráčov v ukončených zápasoch."
                 : "Výhry a prehry podľa tímu, filtrované podľa sezóny. Počítajú sa iba ukončené zápasy."
@@ -90,7 +92,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
       {view === "player" ? (
         <>
-          <Card className="p-3 sm:p-4">
+          <Card className="p-3">
             <PlayerStatsPicker players={players} selectedPlayerId={selectedPlayerId} />
           </Card>
 
