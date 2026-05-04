@@ -11,6 +11,10 @@ export function getSupabaseConfig() {
   };
 }
 
+export function getSiteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim() || null;
+}
+
 export function getMailConfig() {
   const host = process.env.SMTP_HOST;
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;

@@ -50,9 +50,11 @@ Add Supabase values when you are ready to test authentication:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=
 ```
 
 Use the project URL and anon public key from Supabase Dashboard > Project Settings > API. Do not put the service role key in this Next.js app.
+Set `NEXT_PUBLIC_SITE_URL` to your deployed app URL so email confirmation and magic link redirects point to production instead of localhost.
 
 Run the development server:
 

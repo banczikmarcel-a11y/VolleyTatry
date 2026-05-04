@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { splitFullName } from "@/lib/player-name";
 import { createAdminClient } from "@/supabase/admin";
-import { getSupabaseConfig } from "@/supabase/env";
+import { getSiteUrl, getSupabaseConfig } from "@/supabase/env";
 import { createClient } from "@/supabase/server";
 
 type AuthPath = "/login" | "/register";
@@ -34,7 +34,33 @@ function validatePassword(password: string) {
 
 async function getOrigin() {
   const headerStore = await headers();
-  return headerStore.get("origin") ?? "http://localhost:3000";
+  const configuredSiteUrl = getSiteUrl();
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl.replace(/\/+$/, "");
+  }
+
+  const origin = headerStore.get("origin");
+
+  if (origin) {
+    return origin.replace(/\/+$/, "");
+  }
+
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const forwardedProto = headerStore.get("x-forwarded-proto");
+
+  if (forwardedHost) {
+    return `${forwardedProto ?? "https"}://${forwardedHost}`.replace(/\/+$/, "");
+  }
+
+  const host = headerStore.get("host");
+
+  if (host) {
+    const protocol = host.includes("localhost") ? "http" : "https";
+    return `${protocol}://${host}`.replace(/\/+$/, "");
+  }
+
+  return "http://localhost:3000";
 }
 
 function getAuthError(error: unknown) {
