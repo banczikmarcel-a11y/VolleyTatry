@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { closeGroupStageAction, finishTournamentAction, generatePlayoffsAction } from "@/app/admin/tournaments/actions";
+import { closeGroupStageAction, deletePlayoffsAction, finishTournamentAction, generatePlayoffsAction } from "@/app/admin/tournaments/actions";
 import { PageHeader } from "@/components/page-header";
 import { QueryToast } from "@/components/ui/query-toast";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -159,6 +159,15 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
           <p className="text-sm text-court-blue">Použije tabuľky skupín A a B a vytvorí semifinále aj zápasy o umiestnenie.</p>
           <SubmitButton className="w-full py-3" idleLabel="Generovať playoffs" pendingLabel="Generujem nadstavbu..." />
         </FormCard>
+
+        {playoffMatches.length > 0 ? (
+          <FormCard action={deletePlayoffsAction} className="space-y-3">
+            <input type="hidden" name="tournament_id" value={id} />
+            <p className="text-sm font-black uppercase text-court-coral">Zmazať nadstavbu</p>
+            <p className="text-sm text-court-blue">Odstráni vytvorené playoff zápasy. Funguje len vtedy, keď ešte nebol uložený žiadny výsledok nadstavby.</p>
+            <SubmitButton className="w-full py-3" idleLabel="Zmazať nadstavbu" pendingLabel="Mažem nadstavbu..." />
+          </FormCard>
+        ) : null}
 
         <FormCard action={finishTournamentAction} className="space-y-3">
           <input type="hidden" name="tournament_id" value={id} />

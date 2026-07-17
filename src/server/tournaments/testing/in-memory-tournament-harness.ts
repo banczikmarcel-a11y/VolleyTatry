@@ -221,6 +221,17 @@ export async function createInMemoryTournamentHarness(adminState: AdminState = D
       return ok(clone(sortMatches(state.matches.filter((match) => match.tournament_id === tournamentId))));
     },
 
+    async deleteTournamentMatchesByPhases(
+      tournamentId: string,
+      phases: readonly TournamentMatchRecord["phase"][]
+    ) {
+      state.matches = state.matches.filter(
+        (match) => !(match.tournament_id === tournamentId && phases.includes(match.phase))
+      );
+
+      return ok(null);
+    },
+
     async listTournamentResultAuditLogs(tournamentId: string, tournamentMatchId: string) {
       return ok(
         clone(

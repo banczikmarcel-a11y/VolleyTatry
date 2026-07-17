@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/supabase/server";
 import type { Database } from "@/types/database";
+import type { TournamentMatchPhase } from "@/types/tournament";
 import type {
   TournamentBundle,
   TournamentFinalStandingRecord,
@@ -689,6 +690,23 @@ export async function createTournamentRepository() {
       }
 
       return ok((matches ?? []).map((row) => mapMatch(row, sources ?? [], sets ?? [])));
+    },
+
+    async deleteTournamentMatchesByPhases(
+      tournamentId: string,
+      phases: readonly TournamentMatchPhase[]
+    ): Promise<TournamentRepositoryResult<null>> {
+      if (phases.length === 0) {
+        return ok(null);
+      }
+
+      const { error } = await supabase
+        .from("tournament_matches")
+        .delete()
+        .eq("tournament_id", tournamentId)
+        .in("phase", [...phases]);
+
+      return error ? fail(mapError(error)) : ok(null);
     },
 
     async replaceMatchResult(input: TournamentMatchResultWriteInput): Promise<TournamentRepositoryResult<TournamentMatchRecord>> {

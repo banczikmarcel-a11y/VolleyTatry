@@ -324,6 +324,20 @@ export async function generatePlayoffsAction(formData: FormData) {
   redirectWithMessage(`/admin/tournaments/${tournamentId}`, "message", "Nadstavba bola vygenerovaná.");
 }
 
+export async function deletePlayoffsAction(formData: FormData) {
+  const service = await createTournamentService();
+  const tournamentId = getString(formData, "tournament_id");
+  const result = await service.deletePlayoffs(tournamentId);
+
+  if (!result.ok) {
+    redirectWithMessage(`/admin/tournaments/${tournamentId}`, "error", getErrorMessage(result.error));
+  }
+
+  revalidatePath(`/admin/tournaments/${tournamentId}`);
+  revalidatePath(`/admin/tournaments/${tournamentId}/schedule`);
+  redirectWithMessage(`/admin/tournaments/${tournamentId}`, "message", "Nadstavba bola zmazaná.");
+}
+
 export async function finishTournamentAction(formData: FormData) {
   const service = await createTournamentService();
   const tournamentId = getString(formData, "tournament_id");

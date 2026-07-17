@@ -34,6 +34,7 @@ type TournamentAdminStateProvider = typeof getAdminState;
 type TournamentServiceRepository = Awaited<
   ReturnType<(typeof import("@/src/server/tournaments/repositories/tournament-repository"))["createTournamentRepository"]>
 >;
+const PLAYOFF_PHASES: readonly PlayoffPhase[] = ["semifinal", "bronze", "final", "placement"];
 
 function fail<T>(error: TournamentServiceError): TournamentServiceResult<T> {
   return { error, ok: false };
@@ -999,6 +1000,53 @@ export async function createTournamentServiceWithDependencies(dependencies?: {
 
       const saveResult = await repository.upsertTournamentMatches(drafts);
       return saveResult.ok ? ok(saveResult.data) : fail(mapRepositoryError(saveResult.error));
+    },
+
+    async deletePlayoffs(tournamentId: string) {
+      const authResult = await requireAdminAccess(adminStateProvider);
+
+      if (!authResult.ok) {
+        return authResult;
+      }
+
+      const bundleResult = await repository.getTournamentBundle(tournamentId);
+
+      if (!bundleResult.ok) {
+        return fail(mapRepositoryError(bundleResult.error));
+      }
+
+      const playoffMatches = bundleResult.data.matches.filter((match) => isPlayoffPhase(match.phase));
+
+      if (playoffMatches.length === 0) {
+        return fail({
+          code: "NOT_FOUND",
+          message: "Nadstavba pre tento turnaj ešte nebola vygenerovaná."
+        });
+      }
+
+      const lockedPlayoffMatch = playoffMatches.find((match) => match.status === "completed" || match.status === "in_progress");
+
+      if (lockedPlayoffMatch) {
+        return fail({
+          code: "CONFLICT",
+          message: "Nadstavbu nie je možné zmazať po začatí alebo uložení playoff výsledkov."
+        });
+      }
+
+      if (bundleResult.data.finalStandings.length > 0 || bundleResult.data.tournament.status === "completed") {
+        return fail({
+          code: "CONFLICT",
+          message: "Nadstavbu nie je možné zmazať po uzavretí turnaja alebo výpočte konečného poradia."
+        });
+      }
+
+      const deleteResult = await repository.deleteTournamentMatchesByPhases(tournamentId, PLAYOFF_PHASES);
+
+      if (!deleteResult.ok) {
+        return fail(mapRepositoryError(deleteResult.error));
+      }
+
+      return ok(null);
     },
 
     async resolvePlayoffProgression(input: ResolvePlayoffProgressionInput) {

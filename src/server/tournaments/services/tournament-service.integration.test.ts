@@ -427,3 +427,163 @@ test("integration: playoffs cannot be generated twice", async () => {
     assert.equal(repeatedPlayoffGeneration.error.code, "CONFLICT");
   }
 });
+
+test("integration: generated playoffs can be deleted before any playoff result exists", async () => {
+  const harness = await createInMemoryTournamentHarness();
+  const { service } = harness;
+
+  const created = assertOk(
+    await service.createTournament({
+      breakDurationMinutes: 5,
+      courtCount: 2,
+      formatKey: "ten_teams_two_groups_semifinals_placement",
+      location: "Spišská Nová Ves",
+      matchDurationMinutes: 20,
+      name: "Delete Playoff Cup",
+      slug: "delete-playoff-cup",
+      startsAt: "2026-08-07T08:00:00.000Z"
+    })
+  ) as { groups: TournamentGroupRecord[]; tournament: TournamentRecord };
+
+  assertOk(
+    await service.addTeamsToTournament({
+      teamIds: harness.baseTeams.map((team, index) => ({
+        displayName: team.name,
+        groupCode: index < 5 ? "A" : "B",
+        seedNumber: (index % 5) + 1,
+        sortOrder: index + 1,
+        teamId: team.id
+      })),
+      tournamentId: created.tournament.id
+    })
+  );
+
+  const preview = assertOk(
+    await service.generateGroupStageSchedule({
+      breakDurationMinutes: created.tournament.break_duration_minutes,
+      courtCount: created.tournament.court_count,
+      matchDurationMinutes: created.tournament.match_duration_minutes,
+      tournamentId: created.tournament.id,
+      tournamentStart: created.tournament.starts_at ?? "2026-08-07T08:00:00.000Z"
+    })
+  ) as { matches: GeneratedTournamentMatchDraft[]; warnings: { code: string; message: string }[] };
+
+  assertOk(
+    await service.saveGeneratedMatches({
+      matches: preview.matches,
+      tournamentId: created.tournament.id
+    })
+  );
+
+  const bundle = await harness.getBundle();
+  const groupMatches = bundle.matches.filter((match) => match.phase === "group_stage");
+
+  for (const match of groupMatches) {
+    assertOk(
+      await service.enterOrCorrectMatchResult({
+        sets: makeGroupSets(strongerTeamIsHome(match)),
+        status: "completed",
+        tournamentId: created.tournament.id,
+        tournamentMatchId: match.id
+      })
+    );
+  }
+
+  assertOk(await service.closeGroupStage(created.tournament.id));
+  assertOk(await service.generatePlayoffs(created.tournament.id));
+
+  const beforeDelete = await harness.getBundle();
+  assert.equal(beforeDelete.matches.filter((match) => match.phase !== "group_stage").length, 7);
+
+  assertOk(await service.deletePlayoffs(created.tournament.id));
+
+  const afterDelete = await harness.getBundle();
+  assert.equal(afterDelete.matches.filter((match) => match.phase !== "group_stage").length, 0);
+  assert.equal(afterDelete.matches.filter((match) => match.phase === "group_stage").length, 20);
+});
+
+test("integration: generated playoffs cannot be deleted after playoff result entry starts", async () => {
+  const harness = await createInMemoryTournamentHarness();
+  const { service } = harness;
+
+  const created = assertOk(
+    await service.createTournament({
+      breakDurationMinutes: 5,
+      courtCount: 2,
+      formatKey: "ten_teams_two_groups_semifinals_placement",
+      location: "Svit",
+      matchDurationMinutes: 20,
+      name: "Locked Playoff Cup",
+      slug: "locked-playoff-cup",
+      startsAt: "2026-08-08T08:00:00.000Z"
+    })
+  ) as { groups: TournamentGroupRecord[]; tournament: TournamentRecord };
+
+  assertOk(
+    await service.addTeamsToTournament({
+      teamIds: harness.baseTeams.map((team, index) => ({
+        displayName: team.name,
+        groupCode: index < 5 ? "A" : "B",
+        seedNumber: (index % 5) + 1,
+        sortOrder: index + 1,
+        teamId: team.id
+      })),
+      tournamentId: created.tournament.id
+    })
+  );
+
+  const preview = assertOk(
+    await service.generateGroupStageSchedule({
+      breakDurationMinutes: created.tournament.break_duration_minutes,
+      courtCount: created.tournament.court_count,
+      matchDurationMinutes: created.tournament.match_duration_minutes,
+      tournamentId: created.tournament.id,
+      tournamentStart: created.tournament.starts_at ?? "2026-08-08T08:00:00.000Z"
+    })
+  ) as { matches: GeneratedTournamentMatchDraft[]; warnings: { code: string; message: string }[] };
+
+  assertOk(
+    await service.saveGeneratedMatches({
+      matches: preview.matches,
+      tournamentId: created.tournament.id
+    })
+  );
+
+  const bundle = await harness.getBundle();
+  const groupMatches = bundle.matches.filter((match) => match.phase === "group_stage");
+
+  for (const match of groupMatches) {
+    assertOk(
+      await service.enterOrCorrectMatchResult({
+        sets: makeGroupSets(strongerTeamIsHome(match)),
+        status: "completed",
+        tournamentId: created.tournament.id,
+        tournamentMatchId: match.id
+      })
+    );
+  }
+
+  assertOk(await service.closeGroupStage(created.tournament.id));
+  assertOk(await service.generatePlayoffs(created.tournament.id));
+
+  const playoffBundle = await harness.getBundle();
+  const semifinal = playoffBundle.matches.find((match) => match.phase === "semifinal");
+
+  assert.ok(semifinal);
+
+  assertOk(
+    await service.enterOrCorrectMatchResult({
+      sets: makePlayoffSets(true),
+      status: "completed",
+      tournamentId: created.tournament.id,
+      tournamentMatchId: semifinal!.id
+    })
+  );
+
+  const deleteResult = await service.deletePlayoffs(created.tournament.id);
+
+  assert.equal(deleteResult.ok, false);
+  if (!deleteResult.ok) {
+    assert.equal(deleteResult.error.code, "CONFLICT");
+  }
+});
