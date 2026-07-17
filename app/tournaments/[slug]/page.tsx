@@ -40,10 +40,8 @@ export default async function TournamentOverviewPage({ params }: PageProps) {
 
       <TournamentSectionNav
         items={[
-          { href: `/tournaments/${slug}/schedule`, label: "Program" },
-          { href: `/tournaments/${slug}/results`, label: "Výsledky" },
           { href: `/tournaments/${slug}/groups`, label: "Skupiny" },
-          { href: `/tournaments/${slug}/playoffs`, label: "Nadstavba" }
+          { href: `/tournaments/${slug}/results`, label: "Výsledky" }
         ]}
       />
 
