@@ -24,6 +24,13 @@ function createRounds(teamCount: number, groupId = "group-a", tournamentId = "to
   return result.schedule.rounds;
 }
 
+function createMultiGroupRounds(teamCountPerGroup: number, tournamentId = "tournament-1") {
+  return [
+    ...createRounds(teamCountPerGroup, "group-a", tournamentId),
+    ...createRounds(teamCountPerGroup, "group-b", tournamentId)
+  ];
+}
+
 function assertScheduled(result: ReturnType<typeof scheduleGroupMatches>) {
   assert.equal(result.ok, true);
 
@@ -194,6 +201,32 @@ test("schedule: correct behavior with 2 courts", () => {
   const firstRound = schedule.rounds[0];
   assert.ok(firstRound.matches.some((match) => match.courtNumber === 1));
   assert.ok(firstRound.matches.some((match) => match.courtNumber === 2));
+});
+
+test("schedule: separate groups use dedicated courts when enough courts are available", () => {
+  const schedule = assertScheduled(
+    scheduleGroupMatches({
+      breakDurationMinutes: 5,
+      courtCount: 2,
+      groupConfigurations: [
+        { groupId: "group-a", order: 1 },
+        { groupId: "group-b", order: 2 }
+      ],
+      matchDurationMinutes: 20,
+      rounds: createMultiGroupRounds(5),
+      tournamentId: "tournament-1",
+      tournamentStart: "2026-07-18T08:00:00.000Z"
+    })
+  );
+
+  const matches = flattenMatches(schedule);
+  const groupAMatches = matches.filter((match) => match.groupId === "group-a");
+  const groupBMatches = matches.filter((match) => match.groupId === "group-b");
+
+  assert.equal(groupAMatches.length, 10);
+  assert.equal(groupBMatches.length, 10);
+  assert.ok(groupAMatches.every((match) => match.courtNumber === 1));
+  assert.ok(groupBMatches.every((match) => match.courtNumber === 2));
 });
 
 test("schedule: invalid court count", () => {

@@ -188,8 +188,6 @@ export function assignRefereeTeams(input: AssignRefereeTeamsInput): AssignRefere
       });
 
     const selected = scoredCandidates[0];
-    const hasLowerPenaltyAlternative = scoredCandidates.some((candidate) => candidate.team.id !== selected.team.id && candidate.score === selected.score);
-
     assignments.push({
       matchSequenceNumber: match.sequenceNumber,
       refereeTeamId: selected.team.id
@@ -210,7 +208,7 @@ export function assignRefereeTeams(input: AssignRefereeTeamsInput): AssignRefere
       );
     }
 
-    if (selected.repeatedPenalty > 0 || hasLowerPenaltyAlternative) {
+    if (selected.repeatedPenalty > 0 && eligibleTeams.length > 1) {
       warnings.push(
         makeWarning(
           "REPEATED_TEAM_WHEN_ALTERNATIVES_LIMITED",
