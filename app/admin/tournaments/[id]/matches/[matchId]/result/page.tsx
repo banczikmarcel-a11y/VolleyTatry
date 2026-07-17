@@ -9,12 +9,12 @@ import { createTournamentRepository } from "@/src/server/tournaments";
 import type { TournamentResultAuditLogRecord } from "@/src/server/tournaments";
 
 type PageProps = {
-  params: Promise<{ tournamentId: string; matchId: string }>;
+  params: Promise<{ id: string; matchId: string }>;
   searchParams?: Promise<{ error?: string; message?: string }>;
 };
 
 export default async function TournamentMatchResultPage({ params, searchParams }: PageProps) {
-  const { tournamentId, matchId } = await params;
+  const { id: tournamentId, matchId } = await params;
   const query = await searchParams;
   await requireAdminUser(`/admin/tournaments/${tournamentId}/matches/${matchId}/result`);
   const repository = await createTournamentRepository();
