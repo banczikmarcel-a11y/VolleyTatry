@@ -500,10 +500,41 @@ export async function createTournamentRepository() {
         return ok([]);
       }
 
+      const tournamentIds = Array.from(new Set(rows.map((row) => row.tournamentId)));
+      const { data: existingMatches, error: existingMatchesError } = await supabase
+        .from("tournament_matches")
+        .select("id,tournament_id,phase,round_number,slot_number,bracket_key")
+        .in("tournament_id", tournamentIds);
+
+      if (existingMatchesError) {
+        return fail(mapError(existingMatchesError));
+      }
+
+      const keyOf = (row: { phase: string; round_number: number | null; slot_number: number | null; tournament_id: string }) =>
+        `${row.tournament_id}:${row.phase}:${row.round_number ?? "null"}:${row.slot_number ?? "null"}`;
+
+      const existingByKey = new Map((existingMatches ?? []).map((row) => [keyOf(row), row]));
+      const existingByBracketKey = new Map(
+        (existingMatches ?? [])
+          .filter((row) => typeof row.bracket_key === "string" && row.bracket_key.length > 0)
+          .map((row) => [row.bracket_key as string, row])
+      );
       const resolvedMatchIds = new Map<string, string>();
 
       rows.forEach((row) => {
-        const resolvedId: string = typeof row.id === "string" && isUuid(row.id) ? row.id : crypto.randomUUID();
+        const existingMatch =
+          existingByKey.get(
+            keyOf({
+              phase: row.phase,
+              round_number: row.roundNumber ?? null,
+              slot_number: row.slotNumber ?? null,
+              tournament_id: row.tournamentId
+            })
+          )
+          ?? (typeof row.bracketKey === "string" ? existingByBracketKey.get(row.bracketKey) : undefined);
+        const resolvedId: string =
+          existingMatch?.id
+          ?? (typeof row.id === "string" && isUuid(row.id) ? row.id : crypto.randomUUID());
         const identityKeys: string[] = [];
 
         if (typeof row.id === "string" && row.id.length > 0) {
@@ -549,9 +580,6 @@ export async function createTournamentRepository() {
       if (matchesError) {
         return fail(mapError(matchesError));
       }
-
-      const keyOf = (row: { phase: string; round_number: number | null; slot_number: number | null; tournament_id: string }) =>
-        `${row.tournament_id}:${row.phase}:${row.round_number ?? "null"}:${row.slot_number ?? "null"}`;
 
       const savedByKey = new Map((savedMatches ?? []).map((row) => [keyOf(row), row]));
       const savedMatchIds = (savedMatches ?? []).map((row) => row.id);
