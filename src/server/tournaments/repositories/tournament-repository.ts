@@ -500,23 +500,31 @@ export async function createTournamentRepository() {
         return ok([]);
       }
 
-      const matchPayloads: Database["public"]["Tables"]["tournament_matches"]["Insert"][] = rows.map((row) => ({
-        away_tournament_team_id: row.awayTournamentTeamId ?? null,
-        bracket_key: row.bracketKey ?? null,
-        home_tournament_team_id: row.homeTournamentTeamId ?? null,
-        id: isUuid(row.id) ? row.id : undefined,
-        label: row.label ?? null,
-        location: row.location ?? null,
-        phase: row.phase,
-        placement_rank: row.placementRank ?? null,
-        referee_tournament_team_id: row.refereeTournamentTeamId ?? null,
-        round_number: row.roundNumber ?? null,
-        scheduled_at: row.scheduledAt ?? null,
-        slot_number: row.slotNumber ?? null,
-        status: row.status,
-        tournament_group_id: row.tournamentGroupId ?? null,
-        tournament_id: row.tournamentId
-      }));
+      const matchPayloads: Database["public"]["Tables"]["tournament_matches"]["Insert"][] = rows.map((row) => {
+        const basePayload: Database["public"]["Tables"]["tournament_matches"]["Insert"] = {
+          away_tournament_team_id: row.awayTournamentTeamId ?? null,
+          bracket_key: row.bracketKey ?? null,
+          home_tournament_team_id: row.homeTournamentTeamId ?? null,
+          label: row.label ?? null,
+          location: row.location ?? null,
+          phase: row.phase,
+          placement_rank: row.placementRank ?? null,
+          referee_tournament_team_id: row.refereeTournamentTeamId ?? null,
+          round_number: row.roundNumber ?? null,
+          scheduled_at: row.scheduledAt ?? null,
+          slot_number: row.slotNumber ?? null,
+          status: row.status,
+          tournament_group_id: row.tournamentGroupId ?? null,
+          tournament_id: row.tournamentId
+        };
+
+        return isUuid(row.id)
+          ? {
+              ...basePayload,
+              id: row.id
+            }
+          : basePayload;
+      });
 
       const { data: savedMatches, error: matchesError } = await supabase
         .from("tournament_matches")
@@ -588,17 +596,24 @@ export async function createTournamentRepository() {
               : isUuid(source.sourceTournamentMatchId)
                 ? source.sourceTournamentMatchId
                 : symbolicIdToSavedId.get(source.sourceTournamentMatchId) ?? null;
-
-          sourcePayloads.push({
+          const baseSourcePayload: Database["public"]["Tables"]["match_sources"]["Insert"] = {
             participant_slot: source.participantSlot,
             source_group_code: source.sourceGroupCode ?? null,
             source_group_position: source.sourceGroupPosition ?? null,
-            source_tournament_match_id: resolvedSourceMatchId,
             source_tournament_team_id: source.sourceTournamentTeamId ?? null,
             source_type: source.sourceType,
             tournament_id: row.tournamentId,
             tournament_match_id: savedMatch.id
-          });
+          };
+
+          sourcePayloads.push(
+            resolvedSourceMatchId
+              ? {
+                  ...baseSourcePayload,
+                  source_tournament_match_id: resolvedSourceMatchId
+                }
+              : baseSourcePayload
+          );
         });
       });
 
