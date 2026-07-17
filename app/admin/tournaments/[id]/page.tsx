@@ -33,7 +33,8 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
   const missingResults = bundle.matches.filter((match) => match.status !== "completed");
   const countA = bundle.teams.filter((team) => team.groupCode === "A").length;
   const countB = bundle.teams.filter((team) => team.groupCode === "B").length;
-  const standingsResult = await service.recalculateStandings(id);
+  const standingsReady = countA >= 2 && countB >= 2;
+  const standingsResult = standingsReady ? await service.recalculateStandings(id) : null;
 
   return (
     <div className="space-y-6">
@@ -63,7 +64,16 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
         <p className="text-sm font-black uppercase text-court-mint">Pripravenosť</p>
         <p className="text-sm text-court-blue">Tímy a skupiny: <span className="font-bold text-court-ink">{countA === 5 && countB === 5 ? "pripravené" : "neúplné"}</span></p>
         <p className="text-sm text-court-blue">Chýbajúce výsledky: <span className="font-bold text-court-ink">{missingResults.length}</span></p>
-        <p className="text-sm text-court-blue">Tabuľky: <span className="font-bold text-court-ink">{standingsResult.ok ? "vypočítateľné" : standingsResult.error.message}</span></p>
+        <p className="text-sm text-court-blue">
+          Tabuľky:{" "}
+          <span className="font-bold text-court-ink">
+            {!standingsReady
+              ? "najprv doplň aspoň 2 družstvá do každej skupiny"
+              : standingsResult?.ok
+                ? "vypočítateľné"
+                : standingsResult?.error.message ?? "zatiaľ nepripravené"}
+          </span>
+        </p>
         <p className="text-sm text-court-blue">Playoff stav: <span className="font-bold text-court-ink">{playoffMatches.length > 0 ? `${playoffMatches.length} zápasov` : "ešte nevygenerované"}</span></p>
         <p className="text-sm text-court-blue">Finálne poradie: <span className="font-bold text-court-ink">{bundle.finalStandings.length > 0 ? `${bundle.finalStandings.length} pozícií` : "zatiaľ neuzavreté"}</span></p>
       </Card>

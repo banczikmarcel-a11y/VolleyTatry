@@ -100,7 +100,11 @@ export async function createTournamentAction(formData: FormData) {
   };
 
   revalidatePath("/admin/tournaments");
-  redirect(`/admin/tournaments/${createdTournament.tournament.id}?message=${encodeURIComponent("Turnaj bol vytvorený.")}`);
+  redirect(
+    `/admin/tournaments/${createdTournament.tournament.id}/teams?message=${encodeURIComponent(
+      "Turnaj bol vytvorený. Pokračuj pridaním družstiev a skupín."
+    )}`
+  );
 }
 
 export async function addTournamentTeamAction(formData: FormData) {
