@@ -4,7 +4,9 @@ import { Dumbbell, UserCircle } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { MobileNav } from "@/components/mobile-nav";
 import { buttonClasses } from "@/components/ui/button";
-import { navigationItems } from "@/lib/navigation";
+import { withTimeout } from "@/lib/async";
+import { getAdminState } from "@/lib/admin";
+import { adminNavigationItems, publicNavigationItems } from "@/lib/navigation";
 import { formatFullName } from "@/lib/player-name";
 import { getCurrentUser } from "@/supabase/server";
 
@@ -26,6 +28,18 @@ function getUserLabel(user: Awaited<ReturnType<typeof getCurrentUser>>) {
 export async function AppShell({ children }: AppShellProps) {
   const user = await getCurrentUser();
   const userLabel = getUserLabel(user);
+  const adminState = await withTimeout(
+    getAdminState(),
+    2500,
+    "Timed out while loading the admin navigation state."
+  ).catch(() => ({
+    error: "Nepodarilo sa načítať administrátorský stav.",
+    isAdmin: false,
+    userId: null
+  }));
+  const navigationItems = adminState.isAdmin
+    ? [...publicNavigationItems, ...adminNavigationItems]
+    : publicNavigationItems;
 
   return (
     <div className="min-h-screen">
@@ -87,7 +101,7 @@ export async function AppShell({ children }: AppShellProps) {
             </div>
           )}
 
-          <MobileNav userLabel={userLabel} />
+          <MobileNav items={navigationItems} userLabel={userLabel} />
         </nav>
       </header>
 

@@ -4,16 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
-import { navigationItems } from "@/lib/navigation";
 
 type MobileNavProps = {
+  items: readonly {
+    href: string;
+    label: string;
+  }[];
   userLabel: string | null;
 };
 
-export function MobileNav({ userLabel }: MobileNavProps) {
+export function MobileNav({ items, userLabel }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isSignedIn = Boolean(userLabel);
-  const items = [...navigationItems, ...(isSignedIn ? [] : [{ href: "/login", label: "Prihlásenie" }, { href: "/register", label: "Registrácia" }])];
+  const menuItems = [...items, ...(isSignedIn ? [] : [{ href: "/login", label: "Prihlásenie" }, { href: "/register", label: "Registrácia" }])];
 
   return (
     <div className="relative md:hidden">
@@ -29,7 +32,7 @@ export function MobileNav({ userLabel }: MobileNavProps) {
 
       {isOpen ? (
         <div className="absolute right-0 mt-2.5 w-60 rounded-[8px] border border-court-line bg-white p-1.5 shadow-panel">
-          {items.map((item) => (
+          {menuItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
