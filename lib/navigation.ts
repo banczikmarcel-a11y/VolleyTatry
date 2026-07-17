@@ -1,5 +1,6 @@
 export const navigationItems = [
   { href: "/", label: "Domov" },
+  { href: "/tournaments", label: "Turnaje" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/matches", label: "Zápasy" },
   { href: "/stats", label: "Štatistiky" },
