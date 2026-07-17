@@ -32,6 +32,7 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
   const completedGroupMatches = groupMatches.filter((match) => match.status === "completed").length;
   const completedPlayoffMatches = playoffMatches.filter((match) => match.status === "completed").length;
   const missingResults = bundle.matches.filter((match) => match.status !== "completed");
+  const completedResults = bundle.matches.filter((match) => match.status === "completed");
   const countA = bundle.teams.filter((team) => team.groupCode === "A").length;
   const countB = bundle.teams.filter((team) => team.groupCode === "B").length;
   const standingsReady = countA >= 2 && countB >= 2;
@@ -91,6 +92,25 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
                 </div>
                 <Link href={`/admin/tournaments/${id}/matches/${match.id}/result`} className={buttonClasses({ className: "w-full justify-center sm:w-auto", variant: "primary" })}>
                   Výsledok
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {completedResults.length > 0 ? (
+        <Card className="space-y-3">
+          <p className="text-sm font-black uppercase text-court-mint">Uložené výsledky</p>
+          <div className="grid gap-2">
+            {completedResults.map((match) => (
+              <div key={match.id} className="flex flex-col gap-3 rounded-[8px] border border-court-line px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-bold text-court-ink">{match.label ?? match.phase}</p>
+                  <p className="text-xs text-court-blue">Výsledok uložený</p>
+                </div>
+                <Link href={`/admin/tournaments/${id}/matches/${match.id}/result`} className={buttonClasses({ className: "w-full justify-center sm:w-auto", variant: "secondary" })}>
+                  Upraviť výsledok
                 </Link>
               </div>
             ))}

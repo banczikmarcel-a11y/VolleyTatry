@@ -40,7 +40,7 @@ export default async function TournamentGroupsPage({ params, searchParams }: Pag
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Turnaj" title={`${bundle.tournament.name} · Skupiny`} description="Tabuľka skupiny je čitateľná na mobile, detailné sety a body sa rozbalia po riadkoch." homeHref={`/tournaments/${slug}`} />
+      <PageHeader eyebrow="Turnaj" title={`${bundle.tournament.name} · Skupiny`} description="Jednoduchá tabuľka skupiny s poradím, bodmi, setmi a loptami." homeHref={`/tournaments/${slug}`} />
 
       <TournamentSectionNav
         items={[
@@ -64,51 +64,53 @@ export default async function TournamentGroupsPage({ params, searchParams }: Pag
       </div>
 
       <div className="grid gap-3">
-        {snapshot?.entries.length ? snapshot.entries.map((entry) => {
-          const isAdvancing = entry.position <= 2;
+        {snapshot?.entries.length ? (
+          <Card className="overflow-x-auto p-0">
+            <table className="min-w-full text-sm">
+              <thead className="bg-court-ice text-court-blue">
+                <tr>
+                  <th className="px-3 py-3 text-left font-black">#</th>
+                  <th className="px-3 py-3 text-left font-black">Družstvo</th>
+                  <th className="px-3 py-3 text-center font-black">Z</th>
+                  <th className="px-3 py-3 text-center font-black">V</th>
+                  <th className="px-3 py-3 text-center font-black">R</th>
+                  <th className="px-3 py-3 text-center font-black">P</th>
+                  <th className="px-3 py-3 text-center font-black">B</th>
+                  <th className="px-3 py-3 text-center font-black">Sety</th>
+                  <th className="px-3 py-3 text-center font-black">Lopty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {snapshot.entries.map((entry) => {
+                  const isAdvancing = entry.position <= 2;
 
-          return (
-            <Card key={entry.teamId} className={isAdvancing ? "border-court-mint" : undefined}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black uppercase text-court-mint">#{entry.position}{isAdvancing ? " · postup" : ""}</p>
-                  <h3 className="mt-1 text-lg font-black text-court-ink">{entry.teamName ?? entry.teamId}</h3>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-black uppercase text-court-blue">Body</p>
-                  <p className="text-2xl font-black text-court-ink">{entry.tablePoints}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-4 gap-2 text-center text-sm">
-                <div className="rounded-[8px] bg-court-ice px-2 py-2">
-                  <p className="text-[11px] font-black uppercase text-court-blue">Z</p>
-                  <p className="font-black text-court-ink">{entry.played}</p>
-                </div>
-                <div className="rounded-[8px] bg-court-ice px-2 py-2">
-                  <p className="text-[11px] font-black uppercase text-court-blue">V</p>
-                  <p className="font-black text-court-ink">{entry.wins}</p>
-                </div>
-                <div className="rounded-[8px] bg-court-ice px-2 py-2">
-                  <p className="text-[11px] font-black uppercase text-court-blue">R</p>
-                  <p className="font-black text-court-ink">{entry.draws}</p>
-                </div>
-                <div className="rounded-[8px] bg-court-ice px-2 py-2">
-                  <p className="text-[11px] font-black uppercase text-court-blue">P</p>
-                  <p className="font-black text-court-ink">{entry.losses}</p>
-                </div>
-              </div>
-
-              <details className="mt-4 rounded-[8px] border border-court-line px-4 py-3">
-                <summary className="cursor-pointer text-sm font-black text-court-ink">Sety a body</summary>
-                <div className="mt-3 grid gap-2 text-sm text-court-blue">
-                  <p>Sety: <span className="font-bold text-court-ink">{entry.setsFor}:{entry.setsAgainst}</span> ({entry.setDifference >= 0 ? "+" : ""}{entry.setDifference})</p>
-                  <p>Body: <span className="font-bold text-court-ink">{entry.rallyPointsFor}:{entry.rallyPointsAgainst}</span> ({entry.rallyPointDifference >= 0 ? "+" : ""}{entry.rallyPointDifference})</p>
-                </div>
-              </details>
-            </Card>
-          );
-        }) : (
+                  return (
+                    <tr key={entry.teamId} className={isAdvancing ? "bg-court-ice/60" : "border-t border-court-line"}>
+                      <td className="px-3 py-3 align-top font-black text-court-ink">
+                        {entry.position}
+                        {isAdvancing ? <span className="ml-1 text-xs uppercase text-court-mint">postup</span> : null}
+                      </td>
+                      <td className="px-3 py-3 align-top font-bold text-court-ink">{entry.teamName ?? entry.teamId}</td>
+                      <td className="px-3 py-3 text-center font-bold text-court-ink">{entry.played}</td>
+                      <td className="px-3 py-3 text-center font-bold text-court-ink">{entry.wins}</td>
+                      <td className="px-3 py-3 text-center font-bold text-court-ink">{entry.draws}</td>
+                      <td className="px-3 py-3 text-center font-bold text-court-ink">{entry.losses}</td>
+                      <td className="px-3 py-3 text-center font-black text-court-ink">{entry.tablePoints}</td>
+                      <td className="px-3 py-3 text-center text-court-ink">
+                        {entry.setsFor}:{entry.setsAgainst}
+                        <span className="ml-1 text-xs text-court-blue">({entry.setDifference >= 0 ? "+" : ""}{entry.setDifference})</span>
+                      </td>
+                      <td className="px-3 py-3 text-center text-court-ink">
+                        {entry.rallyPointsFor}:{entry.rallyPointsAgainst}
+                        <span className="ml-1 text-xs text-court-blue">({entry.rallyPointDifference >= 0 ? "+" : ""}{entry.rallyPointDifference})</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+        ) : (
           <Card>
             <p className="text-sm font-bold text-court-ink">Tabuľka skupiny ešte nie je pripravená.</p>
             <p className="mt-2 text-sm text-court-blue">Výsledky sa zobrazia po odohraní a vyhodnotení skupinových zápasov.</p>
