@@ -170,7 +170,7 @@ export function generatePlayoffBracket(input: PlayoffGenerationInput): PlayoffGe
       id: `${input.tournamentId}:bronze`,
       label: "O 3. miesto",
       phase: "bronze",
-      placementRank: 3,
+      placementRank: null,
       roundNumber: 2,
       slotNumber: 1,
       sources: [
