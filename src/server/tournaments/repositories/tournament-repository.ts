@@ -500,11 +500,31 @@ export async function createTournamentRepository() {
         return ok([]);
       }
 
+      const resolvedMatchIds = new Map<string, string>();
+
+      rows.forEach((row) => {
+        const resolvedId: string = typeof row.id === "string" && isUuid(row.id) ? row.id : crypto.randomUUID();
+        const identityKeys: string[] = [];
+
+        if (typeof row.id === "string" && row.id.length > 0) {
+          identityKeys.push(row.id);
+        }
+
+        if (typeof row.bracketKey === "string" && row.bracketKey.length > 0) {
+          identityKeys.push(row.bracketKey);
+        }
+
+        identityKeys.forEach((key) => {
+          resolvedMatchIds.set(key, resolvedId);
+        });
+      });
+
       const matchPayloads: Database["public"]["Tables"]["tournament_matches"]["Insert"][] = rows.map((row) => {
         const basePayload: Database["public"]["Tables"]["tournament_matches"]["Insert"] = {
           away_tournament_team_id: row.awayTournamentTeamId ?? null,
           bracket_key: row.bracketKey ?? null,
           home_tournament_team_id: row.homeTournamentTeamId ?? null,
+          id: row.id ? (resolvedMatchIds.get(row.id) ?? crypto.randomUUID()) : crypto.randomUUID(),
           label: row.label ?? null,
           location: row.location ?? null,
           phase: row.phase,
@@ -518,12 +538,7 @@ export async function createTournamentRepository() {
           tournament_id: row.tournamentId
         };
 
-        return isUuid(row.id)
-          ? {
-              ...basePayload,
-              id: row.id
-            }
-          : basePayload;
+        return basePayload;
       });
 
       const { data: savedMatches, error: matchesError } = await supabase
@@ -556,13 +571,11 @@ export async function createTournamentRepository() {
           return;
         }
 
-        if (row.id) {
-          symbolicIdToSavedId.set(row.id, savedMatch.id);
-        }
-
-        if (row.bracketKey) {
-          symbolicIdToSavedId.set(row.bracketKey, savedMatch.id);
-        }
+        [row.id, row.bracketKey]
+          .filter((value): value is string => Boolean(value))
+          .forEach((value) => {
+            symbolicIdToSavedId.set(value, savedMatch.id);
+          });
       });
 
       if (savedMatchIds.length > 0) {
