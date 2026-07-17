@@ -24,10 +24,6 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 
 type TournamentTeamJoinedRow = Database["public"]["Tables"]["tournament_teams"]["Row"] & {
   teams: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null;
-  tournament_groups:
-    | { code: "A" | "B" | "C" | "D"; id: string; name: string | null; sort_order: number }
-    | { code: "A" | "B" | "C" | "D"; id: string; name: string | null; sort_order: number }[]
-    | null;
 };
 
 type TournamentResultAuditLogJoinedRow = Database["public"]["Tables"]["tournament_result_audit_logs"]["Row"] & {
@@ -111,9 +107,12 @@ function mapGroup(row: Database["public"]["Tables"]["tournament_groups"]["Row"])
   };
 }
 
-function mapTournamentTeam(row: TournamentTeamJoinedRow): TournamentTeamRecord {
+function mapTournamentTeam(
+  row: TournamentTeamJoinedRow,
+  groupsById: Map<string, Database["public"]["Tables"]["tournament_groups"]["Row"]>
+): TournamentTeamRecord {
   const team = getSingleRelation(row.teams);
-  const group = getSingleRelation(row.tournament_groups);
+  const group = row.tournament_group_id ? groupsById.get(row.tournament_group_id) ?? null : null;
 
   return {
     created_at: row.created_at,
@@ -243,7 +242,7 @@ async function loadTournamentRows(supabase: SupabaseClient<Database>, tournament
       supabase.from("tournament_groups").select("*").eq("tournament_id", tournamentId).order("sort_order"),
       supabase
         .from("tournament_teams")
-        .select("*,teams:team_id(id,name,slug),tournament_groups!tournament_teams_tournament_group_id_fkey(id,code,name,sort_order)")
+        .select("*,teams:team_id(id,name,slug)")
         .eq("tournament_id", tournamentId)
         .order("sort_order", { ascending: true })
         .order("seed_number", { ascending: true, nullsFirst: false }),
@@ -281,11 +280,13 @@ async function loadTournamentRows(supabase: SupabaseClient<Database>, tournament
     return fail<TournamentBundle>(mapError(finalStandingsError));
   }
 
+  const groupsById = new Map((groupRows ?? []).map((group) => [group.id, group]));
+
   return ok({
     finalStandings: (finalStandingRows ?? []).map(mapFinalStanding),
     groups: (groupRows ?? []).map(mapGroup),
     matches: (matchRows ?? []).map((row) => mapMatch(row, sourceRows ?? [], setRows ?? [])),
-    teams: ((teamRows ?? []) as TournamentTeamJoinedRow[]).map(mapTournamentTeam),
+    teams: ((teamRows ?? []) as TournamentTeamJoinedRow[]).map((row) => mapTournamentTeam(row, groupsById)),
     tournament: mapTournament(tournamentRow, formatRow)
   });
 }
@@ -449,14 +450,27 @@ export async function createTournamentRepository() {
     },
 
     async listTournamentTeams(tournamentId: string): Promise<TournamentRepositoryResult<TournamentTeamRecord[]>> {
-      const { data, error } = await supabase
-        .from("tournament_teams")
-        .select("*,teams:team_id(id,name,slug),tournament_groups!tournament_teams_tournament_group_id_fkey(id,code,name,sort_order)")
-        .eq("tournament_id", tournamentId)
-        .order("sort_order", { ascending: true })
-        .order("seed_number", { ascending: true, nullsFirst: false });
+      const [{ data, error }, { data: groups, error: groupsError }] = await Promise.all([
+        supabase
+          .from("tournament_teams")
+          .select("*,teams:team_id(id,name,slug)")
+          .eq("tournament_id", tournamentId)
+          .order("sort_order", { ascending: true })
+          .order("seed_number", { ascending: true, nullsFirst: false }),
+        supabase.from("tournament_groups").select("*").eq("tournament_id", tournamentId).order("sort_order")
+      ]);
 
-      return error ? fail(mapError(error)) : ok(((data ?? []) as TournamentTeamJoinedRow[]).map(mapTournamentTeam));
+      if (error) {
+        return fail(mapError(error));
+      }
+
+      if (groupsError) {
+        return fail(mapError(groupsError));
+      }
+
+      const groupsById = new Map((groups ?? []).map((group) => [group.id, group]));
+
+      return ok(((data ?? []) as TournamentTeamJoinedRow[]).map((row) => mapTournamentTeam(row, groupsById)));
     },
 
     async upsertTournamentMatches(
