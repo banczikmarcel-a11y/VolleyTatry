@@ -62,6 +62,14 @@ function mapError(error: PostgrestError, fallbackCode: TournamentRepositoryError
   };
 }
 
+function isUuid(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function ok<T>(data: T): TournamentRepositoryResult<T> {
   return { data, ok: true };
 }
@@ -496,7 +504,7 @@ export async function createTournamentRepository() {
         away_tournament_team_id: row.awayTournamentTeamId ?? null,
         bracket_key: row.bracketKey ?? null,
         home_tournament_team_id: row.homeTournamentTeamId ?? null,
-        id: row.id,
+        id: isUuid(row.id) ? row.id : undefined,
         label: row.label ?? null,
         location: row.location ?? null,
         phase: row.phase,
@@ -524,6 +532,30 @@ export async function createTournamentRepository() {
 
       const savedByKey = new Map((savedMatches ?? []).map((row) => [keyOf(row), row]));
       const savedMatchIds = (savedMatches ?? []).map((row) => row.id);
+      const symbolicIdToSavedId = new Map<string, string>();
+
+      rows.forEach((row) => {
+        const savedMatch = savedByKey.get(
+          keyOf({
+            phase: row.phase,
+            round_number: row.roundNumber ?? null,
+            slot_number: row.slotNumber ?? null,
+            tournament_id: row.tournamentId
+          })
+        );
+
+        if (!savedMatch) {
+          return;
+        }
+
+        if (row.id) {
+          symbolicIdToSavedId.set(row.id, savedMatch.id);
+        }
+
+        if (row.bracketKey) {
+          symbolicIdToSavedId.set(row.bracketKey, savedMatch.id);
+        }
+      });
 
       if (savedMatchIds.length > 0) {
         const { error: deleteSourcesError } = await supabase.from("match_sources").delete().in("tournament_match_id", savedMatchIds);
@@ -550,11 +582,18 @@ export async function createTournamentRepository() {
         }
 
         row.sources.forEach((source) => {
+          const resolvedSourceMatchId =
+            source.sourceTournamentMatchId == null
+              ? null
+              : isUuid(source.sourceTournamentMatchId)
+                ? source.sourceTournamentMatchId
+                : symbolicIdToSavedId.get(source.sourceTournamentMatchId) ?? null;
+
           sourcePayloads.push({
             participant_slot: source.participantSlot,
             source_group_code: source.sourceGroupCode ?? null,
             source_group_position: source.sourceGroupPosition ?? null,
-            source_tournament_match_id: source.sourceTournamentMatchId ?? null,
+            source_tournament_match_id: resolvedSourceMatchId,
             source_tournament_team_id: source.sourceTournamentTeamId ?? null,
             source_type: source.sourceType,
             tournament_id: row.tournamentId,
