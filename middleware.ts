@@ -14,8 +14,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+
+  if (!matchesRoute(pathname, protectedRoutes) && !matchesRoute(pathname, authRoutes)) {
+    return NextResponse.next();
+  }
+
+  const { response, user } = await updateSession(request);
 
   if (!user && matchesRoute(pathname, protectedRoutes)) {
     const redirectUrl = request.nextUrl.clone();

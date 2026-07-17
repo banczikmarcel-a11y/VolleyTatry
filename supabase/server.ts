@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { withTimeout } from "@/lib/async";
 import { getSupabaseConfig, requireSupabaseConfig } from "@/supabase/env";
 import type { Database } from "@/types/database";
+
+const AUTH_TIMEOUT_MS = 2500;
 
 export async function createClient() {
   const { anonKey, url } = requireSupabaseConfig();
@@ -30,10 +33,18 @@ export async function getCurrentUser() {
     return null;
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user }
+    } = await withTimeout(
+      supabase.auth.getUser(),
+      AUTH_TIMEOUT_MS,
+      "Timed out while loading the authenticated user."
+    );
 
-  return user;
+    return user;
+  } catch {
+    return null;
+  }
 }

@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { withTimeout } from "@/lib/async";
 import { getSupabaseConfig } from "@/supabase/env";
 import type { Database } from "@/types/database";
+
+const AUTH_TIMEOUT_MS = 2500;
 
 export async function updateSession(request: NextRequest) {
   const config = getSupabaseConfig();
@@ -26,9 +29,18 @@ export async function updateSession(request: NextRequest) {
     }
   });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const result = await withTimeout(
+      supabase.auth.getUser(),
+      AUTH_TIMEOUT_MS,
+      "Timed out while refreshing the authenticated user."
+    );
+    user = result.data.user;
+  } catch {
+    user = null;
+  }
 
   return { response, user };
 }

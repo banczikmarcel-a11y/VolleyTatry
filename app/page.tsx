@@ -8,9 +8,12 @@ import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { QueryToast } from "@/components/ui/query-toast";
 import { getAdminState } from "@/lib/admin";
+import { withTimeout } from "@/lib/async";
 import { getRecentCompletedMatches, getUpcomingProgramMatches } from "@/lib/matches";
 import { getHeadToHeadSummary } from "@/lib/stats";
 import { getCurrentUser } from "@/supabase/server";
+
+const HOME_QUERY_TIMEOUT_MS = 3500;
 
 type HomePageProps = {
   searchParams?: Promise<{
@@ -21,10 +24,46 @@ type HomePageProps = {
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
-  const [currentUser, headToHeadResult, adminState] = await Promise.all([getCurrentUser(), getHeadToHeadSummary(), getAdminState()]);
+  const [currentUser, headToHeadResult, adminState] = await Promise.all([
+    getCurrentUser(),
+    withTimeout(
+      getHeadToHeadSummary(),
+      HOME_QUERY_TIMEOUT_MS,
+      "Timed out while loading the head-to-head summary."
+    ).catch(() => ({
+      error: "Nepodarilo sa načítať súhrn štatistík.",
+      isConfigured: true,
+      summary: null
+    })),
+    withTimeout(
+      getAdminState(),
+      HOME_QUERY_TIMEOUT_MS,
+      "Timed out while loading the admin state."
+    ).catch(() => ({
+      error: "Nepodarilo sa overiť administrátorský prístup.",
+      isAdmin: false,
+      userId: null
+    }))
+  ]);
   const [programResultResolved, recentResultResolved] = await Promise.all([
-    getUpcomingProgramMatches(3, currentUser?.id),
-    getRecentCompletedMatches(3, currentUser?.id)
+    withTimeout(
+      getUpcomingProgramMatches(3, currentUser?.id),
+      HOME_QUERY_TIMEOUT_MS,
+      "Timed out while loading upcoming matches."
+    ).catch(() => ({
+      error: "Nepodarilo sa načítať najbližšie zápasy.",
+      isConfigured: true,
+      matches: []
+    })),
+    withTimeout(
+      getRecentCompletedMatches(3, currentUser?.id),
+      HOME_QUERY_TIMEOUT_MS,
+      "Timed out while loading recent matches."
+    ).catch(() => ({
+      error: "Nepodarilo sa načítať posledné výsledky.",
+      isConfigured: true,
+      matches: []
+    }))
   ]);
   const { error, isConfigured, matches } = programResultResolved;
   const recentMatches = recentResultResolved.matches;
