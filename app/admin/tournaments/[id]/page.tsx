@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, FormCard } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin";
+import { getTournamentMatchResultSummary } from "@/lib/tournament-public";
 import { createTournamentRepository, createTournamentService } from "@/src/server/tournaments";
 
 type PageProps = {
@@ -118,7 +119,22 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
                     {" - "}
                     {getMatchTeamsLabel(match)}
                   </p>
-                  <p className="text-xs text-court-blue">Výsledok uložený</p>
+                  <p className="text-xs text-court-blue">
+                    Výsledok:{" "}
+                    <span className="font-bold text-court-ink">
+                      {(() => {
+                        const result = getTournamentMatchResultSummary(match);
+
+                        if (!result) {
+                          return "nezadaný";
+                        }
+
+                        return result.isGroupStage
+                          ? `${result.totalHomeRallyPoints}:${result.totalAwayRallyPoints}`
+                          : `${result.homeSetsWon}:${result.awaySetsWon}`;
+                      })()}
+                    </span>
+                  </p>
                 </div>
                 <Link href={`/admin/tournaments/${id}/matches/${match.id}/result`} className={buttonClasses({ className: "w-full justify-center sm:w-auto", variant: "secondary" })}>
                   Upraviť výsledok
