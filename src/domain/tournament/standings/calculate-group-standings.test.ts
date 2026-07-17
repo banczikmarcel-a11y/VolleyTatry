@@ -84,28 +84,19 @@ test("supports draw scoring with 2/1/0 table points", () => {
         awayTeamId: "team-b",
         homeTeamId: "team-a",
         id: "match-1",
-        sets: [
-          { awayPoints: 10, homePoints: 15, setNumber: 1 },
-          { awayPoints: 15, homePoints: 10, setNumber: 2 }
-        ]
+        sets: [{ awayPoints: 44, homePoints: 44, setNumber: 1 }]
       }),
       createMatch({
         awayTeamId: "team-c",
         homeTeamId: "team-a",
         id: "match-2",
-        sets: [
-          { awayPoints: 11, homePoints: 15, setNumber: 1 },
-          { awayPoints: 10, homePoints: 15, setNumber: 2 }
-        ]
+        sets: [{ awayPoints: 38, homePoints: 50, setNumber: 1 }]
       }),
       createMatch({
         awayTeamId: "team-c",
         homeTeamId: "team-b",
         id: "match-3",
-        sets: [
-          { awayPoints: 15, homePoints: 13, setNumber: 1 },
-          { awayPoints: 9, homePoints: 15, setNumber: 2 }
-        ]
+        sets: [{ awayPoints: 41, homePoints: 41, setNumber: 1 }]
       })
     ],
     teams
@@ -178,7 +169,7 @@ test("uses sets won as a tie-breaker after set difference", () => {
         id: "match-1",
         sets: [
           { awayPoints: 10, homePoints: 15, setNumber: 1 },
-          { awayPoints: 15, homePoints: 8, setNumber: 2 }
+          { awayPoints: 15, homePoints: 10, setNumber: 2 }
         ]
       }),
       createMatch({
@@ -221,7 +212,7 @@ test("uses rally point difference as a tie-breaker after sets won", () => {
         id: "match-1",
         sets: [
           { awayPoints: 10, homePoints: 15, setNumber: 1 },
-          { awayPoints: 15, homePoints: 8, setNumber: 2 }
+          { awayPoints: 15, homePoints: 10, setNumber: 2 }
         ]
       }),
       createMatch({
@@ -229,8 +220,8 @@ test("uses rally point difference as a tie-breaker after sets won", () => {
         homeTeamId: "team-a",
         id: "match-2",
         sets: [
-          { awayPoints: 15, homePoints: 13, setNumber: 1 },
-          { awayPoints: 15, homePoints: 13, setNumber: 2 }
+          { awayPoints: 10, homePoints: 15, setNumber: 1 },
+          { awayPoints: 20, homePoints: 13, setNumber: 2 }
         ]
       }),
       createMatch({
@@ -238,8 +229,8 @@ test("uses rally point difference as a tie-breaker after sets won", () => {
         homeTeamId: "team-b",
         id: "match-3",
         sets: [
-          { awayPoints: 15, homePoints: 5, setNumber: 1 },
-          { awayPoints: 15, homePoints: 5, setNumber: 2 }
+          { awayPoints: 10, homePoints: 15, setNumber: 1 },
+          { awayPoints: 20, homePoints: 5, setNumber: 2 }
         ]
       })
     ],
@@ -247,10 +238,10 @@ test("uses rally point difference as a tie-breaker after sets won", () => {
   });
 
   assert.deepEqual(result.entries.map((entry) => entry.teamId), ["team-c", "team-a", "team-b"]);
-  assert.equal(result.entries[1].setsFor, 1);
-  assert.equal(result.entries[2].setsFor, 1);
-  assert.equal(result.entries[1].rallyPointDifference, -6);
-  assert.equal(result.entries[2].rallyPointDifference, -18);
+  assert.equal(result.entries[1].setsFor, 2);
+  assert.equal(result.entries[2].setsFor, 2);
+  assert.equal(result.entries[1].rallyPointDifference, -2);
+  assert.equal(result.entries[2].rallyPointDifference, -10);
 });
 
 test("uses head-to-head result as a tie-breaker", () => {

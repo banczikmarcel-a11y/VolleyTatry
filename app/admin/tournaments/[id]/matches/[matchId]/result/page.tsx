@@ -39,6 +39,7 @@ export default async function TournamentMatchResultPage({ params, searchParams }
   const totalHome = match.sets.reduce((sum, set) => sum + set.home_points, 0);
   const totalAway = match.sets.reduce((sum, set) => sum + set.away_points, 0);
   const auditLogs = auditLogsResult.ok ? auditLogsResult.data : [];
+  const isGroupStageMatch = match.phase === "group_stage";
 
   const renderAuditSnapshot = (snapshot: TournamentResultAuditLogRecord["new_result"] | TournamentResultAuditLogRecord["previous_result"]) => {
     if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
@@ -63,7 +64,7 @@ export default async function TournamentMatchResultPage({ params, searchParams }
   return (
     <div className="space-y-6">
       <QueryToast error={query?.error} message={query?.message} />
-      <PageHeader eyebrow="Admin" title={`${tournament.name} · Výsledok`} description="Zadaj sety cez numerické mobilné inputy, validácia beží na serveri podľa fázy zápasu." homeHref={`/admin/tournaments/${tournamentId}`} />
+      <PageHeader eyebrow="Admin" title={`${tournament.name} · Výsledok`} description={isGroupStageMatch ? "V skupine zapisuješ len celkový počet získaných lôpt oboch družstiev." : "Zadaj sety cez numerické mobilné inputy, validácia beží na serveri podľa fázy zápasu."} homeHref={`/admin/tournaments/${tournamentId}`} />
 
       <Card className="space-y-2 bg-court-ice">
         <p className="text-sm font-black uppercase text-court-mint">{match.phase}</p>
@@ -78,12 +79,12 @@ export default async function TournamentMatchResultPage({ params, searchParams }
         <input type="hidden" name="tournament_id" value={tournamentId} />
         <input type="hidden" name="match_id" value={matchId} />
         <input type="hidden" name="status" value="completed" />
-        {[1, 2, 3].map((setNumber) => {
+        {(isGroupStageMatch ? [1] : [1, 2, 3]).map((setNumber) => {
           const currentSet = match.sets.find((set) => set.set_number === setNumber);
 
           return (
             <Card key={setNumber} className="space-y-3 border-dashed">
-              <p className="text-sm font-black uppercase text-court-mint">Set {setNumber}</p>
+              <p className="text-sm font-black uppercase text-court-mint">{isGroupStageMatch ? "Lopty" : `Set ${setNumber}`}</p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-2">
                   <span className="text-sm font-bold text-court-ink">{homeName}</span>

@@ -18,7 +18,31 @@ function normalizeSets(sets: MatchSetInput[]) {
   return [...sets].sort((left, right) => left.setNumber - right.setNumber);
 }
 
-function validateBaseSets(sets: MatchSetInput[]) {
+function validateGroupScores(sets: MatchSetInput[]) {
+  const errors: MatchValidationError[] = [];
+  const validatedSets: MatchValidatedSet[] = [];
+
+  if (sets.length === 0) {
+    errors.push(makeError("EMPTY_SETS", "At least one completed score entry is required."));
+    return { errors, sets: validatedSets };
+  }
+
+  normalizeSets(sets).forEach((set) => {
+    if (set.homePoints < 0 || set.awayPoints < 0) {
+      errors.push(makeError("NEGATIVE_SCORE", "Scores must be zero or greater.", set.setNumber));
+      return;
+    }
+
+    validatedSets.push({
+      ...set,
+      winner: set.homePoints > set.awayPoints ? "home" : "away"
+    });
+  });
+
+  return { errors, sets: validatedSets };
+}
+
+function validatePlayoffBaseSets(sets: MatchSetInput[]) {
   const errors: MatchValidationError[] = [];
   const validatedSets: MatchValidatedSet[] = [];
 
@@ -64,7 +88,12 @@ function buildGroupSummary(validatedSets: MatchValidatedSet[]): GroupMatchSummar
   const awaySetsWon = validatedSets.length - homeSetsWon;
   const homeTotalRallyPoints = validatedSets.reduce((total, set) => total + set.homePoints, 0);
   const awayTotalRallyPoints = validatedSets.reduce((total, set) => total + set.awayPoints, 0);
-  const outcome = buildOutcome(homeSetsWon, awaySetsWon);
+  const outcome =
+    homeTotalRallyPoints > awayTotalRallyPoints
+      ? "home_win"
+      : awayTotalRallyPoints > homeTotalRallyPoints
+        ? "away_win"
+        : "draw";
 
   return {
     away: {
@@ -194,22 +223,33 @@ function buildPlayoffSummary(validatedSets: MatchValidatedSet[], homeSetsWon: nu
 
 export function validateMatchResult(input: MatchValidationInput): MatchValidationResult {
   const profile = getRuleProfile(input.profile);
-  const baseValidation = validateBaseSets(input.sets);
+
+  if (profile.kind === "group") {
+    const groupValidation = validateGroupScores(input.sets);
+
+    if (groupValidation.errors.length > 0) {
+      return {
+        errors: groupValidation.errors,
+        ok: false,
+        profile: input.profile
+      };
+    }
+
+    return {
+      ok: true,
+      profile: "GROUP_TIMED_MATCH",
+      sets: groupValidation.sets,
+      summary: buildGroupSummary(groupValidation.sets)
+    };
+  }
+
+  const baseValidation = validatePlayoffBaseSets(input.sets);
 
   if (baseValidation.errors.length > 0) {
     return {
       errors: baseValidation.errors,
       ok: false,
       profile: input.profile
-    };
-  }
-
-  if (profile.kind === "group") {
-    return {
-      ok: true,
-      profile: "GROUP_TIMED_MATCH",
-      sets: baseValidation.sets,
-      summary: buildGroupSummary(baseValidation.sets)
     };
   }
 

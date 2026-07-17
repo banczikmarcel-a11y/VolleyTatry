@@ -68,8 +68,7 @@ test("authorization: anonymous and player users are blocked from admin tournamen
 
   const playerSaveResult = await playerHarness.service.enterOrCorrectMatchResult({
     sets: [
-      { awayPoints: 18, homePoints: 25, setNumber: 1 },
-      { awayPoints: 20, homePoints: 25, setNumber: 2 }
+      { awayPoints: 38, homePoints: 50, setNumber: 1 }
     ],
     status: "completed",
     tournamentId: "missing-tournament",
@@ -121,8 +120,7 @@ test("authorization: administrator can create tournaments and correct results", 
 
   const firstSave = await harness.service.enterOrCorrectMatchResult({
     sets: [
-      { awayPoints: 18, homePoints: 25, setNumber: 1 },
-      { awayPoints: 20, homePoints: 25, setNumber: 2 }
+      { awayPoints: 38, homePoints: 50, setNumber: 1 }
     ],
     status: "completed",
     tournamentId: created.tournament.id,
@@ -134,8 +132,7 @@ test("authorization: administrator can create tournaments and correct results", 
   const correctionSave = await harness.service.enterOrCorrectMatchResult({
     correctionReason: "Opravený zápis bodov v druhom sete",
     sets: [
-      { awayPoints: 18, homePoints: 25, setNumber: 1 },
-      { awayPoints: 19, homePoints: 25, setNumber: 2 }
+      { awayPoints: 39, homePoints: 50, setNumber: 1 }
     ],
     status: "completed",
     tournamentId: created.tournament.id,

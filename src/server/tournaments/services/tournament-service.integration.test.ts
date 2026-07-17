@@ -21,14 +21,8 @@ function assertOk<T>(result: TournamentServiceResult<T>): T {
 
 function makeGroupSets(homeWins: boolean) {
   return homeWins
-    ? [
-        { awayPoints: 18, homePoints: 25, setNumber: 1 },
-        { awayPoints: 20, homePoints: 25, setNumber: 2 }
-      ]
-    : [
-        { awayPoints: 25, homePoints: 18, setNumber: 1 },
-        { awayPoints: 25, homePoints: 20, setNumber: 2 }
-      ];
+    ? [{ awayPoints: 38, homePoints: 50, setNumber: 1 }]
+    : [{ awayPoints: 50, homePoints: 38, setNumber: 1 }];
 }
 
 function makePlayoffSets(homeWins: boolean) {

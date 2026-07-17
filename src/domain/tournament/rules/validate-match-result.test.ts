@@ -166,10 +166,7 @@ test("playoff: invalid match where neither team wins 2 sets", () => {
 test("group: home win", () => {
   const result = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 20, homePoints: 25, setNumber: 1 },
-      { awayPoints: 18, homePoints: 25, setNumber: 2 }
-    ]
+    sets: [{ awayPoints: 38, homePoints: 50, setNumber: 1 }]
   });
 
   const success = assertGroupSuccess(result);
@@ -180,10 +177,7 @@ test("group: home win", () => {
 test("group: away win", () => {
   const result = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 25, homePoints: 20, setNumber: 1 },
-      { awayPoints: 25, homePoints: 18, setNumber: 2 }
-    ]
+    sets: [{ awayPoints: 50, homePoints: 38, setNumber: 1 }]
   });
 
   const success = assertGroupSuccess(result);
@@ -194,10 +188,7 @@ test("group: away win", () => {
 test("group: draw", () => {
   const result = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 25, homePoints: 18, setNumber: 1 },
-      { awayPoints: 16, homePoints: 25, setNumber: 2 }
-    ]
+    sets: [{ awayPoints: 44, homePoints: 44, setNumber: 1 }]
   });
 
   const success = assertGroupSuccess(result);
@@ -209,18 +200,12 @@ test("group: draw", () => {
 test("group: correct calculation of table points", () => {
   const winResult = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 18, homePoints: 25, setNumber: 1 },
-      { awayPoints: 21, homePoints: 25, setNumber: 2 }
-    ]
+    sets: [{ awayPoints: 39, homePoints: 50, setNumber: 1 }]
   });
 
   const drawResult = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 25, homePoints: 23, setNumber: 1 },
-      { awayPoints: 20, homePoints: 25, setNumber: 2 }
-    ]
+    sets: [{ awayPoints: 48, homePoints: 48, setNumber: 1 }]
   });
 
   const winSuccess = assertGroupSuccess(winResult);
@@ -250,11 +235,7 @@ test("group: correct aggregation of sets", () => {
 test("group: correct aggregation of rally points", () => {
   const result = validateMatchResult({
     profile: "GROUP_TIMED_MATCH",
-    sets: [
-      { awayPoints: 20, homePoints: 25, setNumber: 1 },
-      { awayPoints: 25, homePoints: 23, setNumber: 2 },
-      { awayPoints: 18, homePoints: 25, setNumber: 3 }
-    ]
+    sets: [{ awayPoints: 63, homePoints: 73, setNumber: 1 }]
   });
 
   const success = assertGroupSuccess(result);
