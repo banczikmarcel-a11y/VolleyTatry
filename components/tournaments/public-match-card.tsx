@@ -54,11 +54,11 @@ export function TournamentPublicMatchCard({
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="min-w-0 flex-1 break-words font-bold text-court-ink">{homeName}</span>
-            <span className="shrink-0 font-black text-court-ink">{result ? result.homeSetsWon : "-"}</span>
+            <span className="shrink-0 font-black text-court-ink">{result ? result.homeDisplayScore : "-"}</span>
           </div>
           <div className="flex items-center justify-between gap-3 text-sm">
             <span className="min-w-0 flex-1 break-words font-bold text-court-ink">{awayName}</span>
-            <span className="shrink-0 font-black text-court-ink">{result ? result.awaySetsWon : "-"}</span>
+            <span className="shrink-0 font-black text-court-ink">{result ? result.awayDisplayScore : "-"}</span>
           </div>
         </div>
       </div>
@@ -71,10 +71,15 @@ export function TournamentPublicMatchCard({
 
       {showDetails && result ? (
         <div className="grid gap-1 rounded-[8px] border border-court-line px-4 py-3 text-sm text-court-blue">
-          <p>Spolu sety: <span className="font-bold text-court-ink">{result.totalSets}</span></p>
+          <p>
+            {result.isGroupStage ? "Body do tabuľky" : "Spolu sety"}:{" "}
+            <span className="font-bold text-court-ink">
+              {result.isGroupStage ? `${result.homeTablePoints}:${result.awayTablePoints}` : result.totalSets}
+            </span>
+          </p>
           <p>Body: <span className="font-bold text-court-ink">{result.totalHomeRallyPoints}:{result.totalAwayRallyPoints}</span></p>
           <p className="text-xs text-court-blue">
-            Sety: {match.sets.map((set) => `${set.home_points}:${set.away_points}`).join(" · ")}
+            {result.isGroupStage ? "Zápis lôpt" : "Sety"}: {match.sets.map((set) => `${set.home_points}:${set.away_points}`).join(" · ")}
           </p>
         </div>
       ) : null}

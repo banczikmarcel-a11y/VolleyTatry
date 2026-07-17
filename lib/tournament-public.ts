@@ -123,6 +123,11 @@ export function getTournamentMatchResultSummary(match: TournamentMatchRecord) {
 
   if (validation.profile === "GROUP_TIMED_MATCH") {
     return {
+      awayDisplayScore: validation.summary.away.tablePoints,
+      awayTablePoints: validation.summary.away.tablePoints,
+      homeDisplayScore: validation.summary.home.tablePoints,
+      homeTablePoints: validation.summary.home.tablePoints,
+      isGroupStage: true,
       awaySetsWon: validation.summary.away.setsWon,
       homeSetsWon: validation.summary.home.setsWon,
       totalAwayRallyPoints: validation.summary.away.totalRallyPoints,
@@ -132,8 +137,11 @@ export function getTournamentMatchResultSummary(match: TournamentMatchRecord) {
   }
 
   return {
+    awayDisplayScore: validation.summary.away.setsWon,
     awaySetsWon: validation.summary.away.setsWon,
+    homeDisplayScore: validation.summary.home.setsWon,
     homeSetsWon: validation.summary.home.setsWon,
+    isGroupStage: false,
     totalAwayRallyPoints: validation.summary.away.totalRallyPoints,
     totalHomeRallyPoints: validation.summary.home.totalRallyPoints,
     totalSets: validation.summary.totalSets
