@@ -14,7 +14,10 @@ export function PageHeader({ eyebrow, title, description, homeHref, inline = fal
   return (
     <header className={cn("max-w-3xl", className)}>
       {homeHref ? (
-        <Link href={homeHref} className="text-sm font-black text-court-blue underline decoration-court-mint underline-offset-4">
+        <Link
+          href={homeHref}
+          className="focus-ring inline-flex min-h-11 items-center text-sm font-black text-court-blue underline decoration-court-mint underline-offset-4"
+        >
           Domov
         </Link>
       ) : null}
