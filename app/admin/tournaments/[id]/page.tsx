@@ -34,6 +34,8 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
   const missingResults = bundle.matches.filter((match) => match.status !== "completed");
   const completedResults = bundle.matches.filter((match) => match.status === "completed");
   const teamNamesById = new Map(bundle.teams.map((team) => [team.id, team.display_name ?? team.teamName]));
+  const getMatchTeamsLabel = (match: (typeof bundle.matches)[number]) =>
+    `${match.home_tournament_team_id ? teamNamesById.get(match.home_tournament_team_id) ?? match.home_tournament_team_id : "Čaká sa na tím"} - ${match.away_tournament_team_id ? teamNamesById.get(match.away_tournament_team_id) ?? match.away_tournament_team_id : "Čaká sa na tím"}`;
   const countA = bundle.teams.filter((team) => team.groupCode === "A").length;
   const countB = bundle.teams.filter((team) => team.groupCode === "B").length;
   const standingsReady = countA >= 2 && countB >= 2;
@@ -91,9 +93,7 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
                   <p className="break-words text-sm font-bold text-court-ink">
                     {match.label ?? match.phase}
                     {" - "}
-                    {match.home_tournament_team_id ? teamNamesById.get(match.home_tournament_team_id) ?? match.home_tournament_team_id : "Čaká sa na tím"}
-                    {" - "}
-                    {match.away_tournament_team_id ? teamNamesById.get(match.away_tournament_team_id) ?? match.away_tournament_team_id : "Čaká sa na tím"}
+                    {getMatchTeamsLabel(match)}
                   </p>
                   <p className="text-xs text-court-blue">{match.status}</p>
                 </div>
@@ -113,7 +113,11 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
             {completedResults.map((match) => (
               <div key={match.id} className="flex flex-col gap-3 rounded-[8px] border border-court-line px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-bold text-court-ink">{match.label ?? match.phase}</p>
+                  <p className="break-words text-sm font-bold text-court-ink">
+                    {match.label ?? match.phase}
+                    {" - "}
+                    {getMatchTeamsLabel(match)}
+                  </p>
                   <p className="text-xs text-court-blue">Výsledok uložený</p>
                 </div>
                 <Link href={`/admin/tournaments/${id}/matches/${match.id}/result`} className={buttonClasses({ className: "w-full justify-center sm:w-auto", variant: "secondary" })}>
