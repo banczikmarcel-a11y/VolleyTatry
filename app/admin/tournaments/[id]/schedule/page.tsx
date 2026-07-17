@@ -2,8 +2,9 @@ import { saveScheduleAction } from "@/app/admin/tournaments/actions";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { QueryToast } from "@/components/ui/query-toast";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card, FormCard } from "@/components/ui/card";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { requireAdminUser } from "@/lib/admin";
 import { createTournamentRepository, createTournamentService } from "@/src/server/tournaments";
 import type { GeneratedTournamentMatchDraft } from "@/src/server/tournaments";
@@ -126,7 +127,11 @@ export default async function TournamentSchedulePage({ params, searchParams }: P
             <input type="hidden" name="tournament_start" value={tournament.starts_at ?? ""} />
             <input type="hidden" name="regenerate" value={query?.regenerate === "1" ? "true" : "false"} />
             <p className="text-sm text-court-blue">Uloženie zopakuje serverové generovanie s touto konfiguráciou a persistuje výsledok až po tomto potvrdení.</p>
-            <Button type="submit" className="w-full py-3">Potvrdiť a uložiť rozpis</Button>
+            <SubmitButton
+              className="w-full py-3"
+              idleLabel="Potvrdiť a uložiť rozpis"
+              pendingLabel="Ukladám rozpis..."
+            />
           </FormCard>
         </>
       ) : null}

@@ -243,7 +243,7 @@ async function loadTournamentRows(supabase: SupabaseClient<Database>, tournament
       supabase.from("tournament_groups").select("*").eq("tournament_id", tournamentId).order("sort_order"),
       supabase
         .from("tournament_teams")
-        .select("*,teams:team_id(id,name,slug),tournament_groups:tournament_group_id(id,code,name,sort_order)")
+        .select("*,teams:team_id(id,name,slug),tournament_groups!tournament_teams_tournament_group_id_fkey(id,code,name,sort_order)")
         .eq("tournament_id", tournamentId)
         .order("sort_order", { ascending: true })
         .order("seed_number", { ascending: true, nullsFirst: false }),
@@ -451,7 +451,7 @@ export async function createTournamentRepository() {
     async listTournamentTeams(tournamentId: string): Promise<TournamentRepositoryResult<TournamentTeamRecord[]>> {
       const { data, error } = await supabase
         .from("tournament_teams")
-        .select("*,teams:team_id(id,name,slug),tournament_groups:tournament_group_id(id,code,name,sort_order)")
+        .select("*,teams:team_id(id,name,slug),tournament_groups!tournament_teams_tournament_group_id_fkey(id,code,name,sort_order)")
         .eq("tournament_id", tournamentId)
         .order("sort_order", { ascending: true })
         .order("seed_number", { ascending: true, nullsFirst: false });

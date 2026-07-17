@@ -2,8 +2,9 @@ import Link from "next/link";
 import { saveTournamentResultAction } from "@/app/admin/tournaments/actions";
 import { PageHeader } from "@/components/page-header";
 import { QueryToast } from "@/components/ui/query-toast";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card, FormCard } from "@/components/ui/card";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { requireAdminUser } from "@/lib/admin";
 import { createTournamentRepository } from "@/src/server/tournaments";
 import type { TournamentResultAuditLogRecord } from "@/src/server/tournaments";
@@ -126,7 +127,7 @@ export default async function TournamentMatchResultPage({ params, searchParams }
         </label>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Button type="submit" className="w-full py-3">Uložiť výsledok</Button>
+          <SubmitButton className="w-full py-3" idleLabel="Uložiť výsledok" pendingLabel="Ukladám výsledok..." />
           <Link href={`/admin/tournaments/${tournamentId}`} className={buttonClasses({ className: "w-full justify-center py-3", variant: "secondary" })}>
             Späť na prehľad
           </Link>

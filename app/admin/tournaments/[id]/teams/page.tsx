@@ -2,8 +2,9 @@ import Link from "next/link";
 import { addTournamentTeamAction, saveTournamentGroupsAction } from "@/app/admin/tournaments/actions";
 import { PageHeader } from "@/components/page-header";
 import { QueryToast } from "@/components/ui/query-toast";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card, FormCard } from "@/components/ui/card";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { requireAdminUser } from "@/lib/admin";
 import { createTournamentRepository } from "@/src/server/tournaments";
 
@@ -77,7 +78,11 @@ export default async function TournamentTeamsPage({ params, searchParams }: Page
           <span className="text-sm font-bold text-court-ink">Seed</span>
           <input type="number" min={1} step={1} name="seed_number" className="focus-ring min-h-11 rounded-[8px] border border-court-line px-4 py-3 text-base" />
         </label>
-        <Button type="submit" className="w-full py-3" disabled={availableTeams.length === 0}>Pridať tím do turnaja</Button>
+        <SubmitButton
+          className="w-full py-3"
+          idleLabel="Pridať tím do turnaja"
+          pendingLabel="Pridávam tím..."
+        />
       </FormCard>
 
       <FormCard action={saveTournamentGroupsAction} className="space-y-4">
@@ -87,7 +92,7 @@ export default async function TournamentTeamsPage({ params, searchParams }: Page
             <p className="text-sm font-black uppercase text-court-mint">Skupiny a poradie</p>
             <p className="text-sm text-court-blue">Veľké touch targety sú pripravené aj pre mobilné triedenie cez čísla a výber skupiny.</p>
           </div>
-          <Button type="submit" className="w-full shrink-0 sm:w-auto">Uložiť</Button>
+          <SubmitButton className="w-full shrink-0 sm:w-auto" idleLabel="Uložiť" pendingLabel="Ukladám skupiny..." />
         </div>
         <div className="grid gap-3">
           {tournamentTeams.map((team, index) => (

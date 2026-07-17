@@ -2,7 +2,8 @@ import Link from "next/link";
 import { closeGroupStageAction, finishTournamentAction, generatePlayoffsAction } from "@/app/admin/tournaments/actions";
 import { PageHeader } from "@/components/page-header";
 import { QueryToast } from "@/components/ui/query-toast";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { buttonClasses } from "@/components/ui/button";
 import { Card, FormCard } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin";
 import { createTournamentRepository, createTournamentService } from "@/src/server/tournaments";
@@ -102,21 +103,21 @@ export default async function TournamentAdminOverviewPage({ params, searchParams
           <input type="hidden" name="tournament_id" value={id} />
           <p className="text-sm font-black uppercase text-court-mint">Uzavrieť skupinu</p>
           <p className="text-sm text-court-blue">Kontroluje dokončenie všetkých skupinových zápasov a pripravenosť tabuľky.</p>
-          <Button type="submit" className="w-full py-3">Uzavrieť skupinovú fázu</Button>
+          <SubmitButton className="w-full py-3" idleLabel="Uzavrieť skupinovú fázu" pendingLabel="Uzatváram skupinu..." />
         </FormCard>
 
         <FormCard action={generatePlayoffsAction} className="space-y-3">
           <input type="hidden" name="tournament_id" value={id} />
           <p className="text-sm font-black uppercase text-court-mint">Generovať nadstavbu</p>
           <p className="text-sm text-court-blue">Použije tabuľky skupín A a B a vytvorí semifinále aj zápasy o umiestnenie.</p>
-          <Button type="submit" className="w-full py-3">Generovať playoffs</Button>
+          <SubmitButton className="w-full py-3" idleLabel="Generovať playoffs" pendingLabel="Generujem nadstavbu..." />
         </FormCard>
 
         <FormCard action={finishTournamentAction} className="space-y-3">
           <input type="hidden" name="tournament_id" value={id} />
           <p className="text-sm font-black uppercase text-court-mint">Ukončiť turnaj</p>
           <p className="text-sm text-court-blue">Spočíta finálne poradie až po dohraní finále, bronzu a všetkých placement zápasov.</p>
-          <Button type="submit" className="w-full py-3">Ukončiť turnaj</Button>
+          <SubmitButton className="w-full py-3" idleLabel="Ukončiť turnaj" pendingLabel="Ukončujem turnaj..." />
         </FormCard>
       </div>
     </div>
