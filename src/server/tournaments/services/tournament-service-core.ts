@@ -138,6 +138,7 @@ function toGroupStageDrafts(
 
   const drafts: GeneratedTournamentMatchDraft[] = [];
   const warnings: { code: string; message: string }[] = [];
+  const groupMatchOrderByGroupId = new Map<string, number>();
 
   for (const round of scheduleResult.schedule.rounds) {
     const groupTeams = bundle.teams.filter((team) => team.tournament_group_id === round.groupId);
@@ -169,13 +170,16 @@ function toGroupStageDrafts(
     const groupCode = bundle.groups.find((group) => group.id === round.groupId)?.code ?? null;
 
     round.matches.forEach((match) => {
+      const groupMatchOrder = (groupMatchOrderByGroupId.get(round.groupId) ?? 0) + 1;
+      groupMatchOrderByGroupId.set(round.groupId, groupMatchOrder);
+
       drafts.push({
         awayTournamentTeamId: match.awayTeamId,
         bracketKey: `group_${groupCode ?? "?"}_round_${match.roundNumber}_match_${match.matchNumber}`,
         groupCode,
         homeTournamentTeamId: match.homeTeamId,
         id: `${match.tournamentId}:group_stage:${groupCode ?? "?"}:${match.roundNumber}:${match.sequenceNumber}`,
-        label: `Skupina ${groupCode ?? "?"} - ${match.roundNumber}. kolo / zápas ${match.matchNumber}`,
+        label: `Skupina ${groupCode ?? "?"} - zápas ${groupMatchOrder}`,
         location: `Ihrisko ${match.courtNumber}`,
         phase: "group_stage",
         placementRank: null,
