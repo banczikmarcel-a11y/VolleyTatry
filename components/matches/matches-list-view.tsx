@@ -163,7 +163,10 @@ export function MatchesListView({ matches }: MatchesListViewProps) {
                 <td className="px-4 py-3 text-sm font-black text-court-blue">{getSetsRatio(match)}</td>
                 <td className="px-4 py-3 text-sm font-black text-court-ink">{match.availablePlayersCount}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/matches/${match.id}`} className={buttonClasses({ className: "px-2.5 py-1.5 text-xs sm:px-3 sm:text-sm", variant: "secondary" })}>
+                  <Link
+                    href={`/matches/${match.id}`}
+                    className={buttonClasses({ className: "bg-court-cyan px-3 py-2 text-court-navy hover:bg-white", variant: "ghost" })}
+                  >
                     Detail
                   </Link>
                 </td>

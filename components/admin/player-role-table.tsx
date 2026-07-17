@@ -13,7 +13,7 @@ type PlayerRoleTableProps = {
   teams: Pick<Team, "id" | "name" | "slug">[];
 };
 
-type SortKey = "email" | "firstName" | "lastName" | "teamName";
+type SortKey = "email" | "firstName" | "lastName" | "role" | "teamName";
 type EditingState = Record<string, boolean>;
 
 function getPlayerName(player: AdminPlayer) {
@@ -22,6 +22,19 @@ function getPlayerName(player: AdminPlayer) {
 
 function getPlayerEmail(player: AdminPlayer) {
   return player.email || "Bez e-mailu";
+}
+
+function getRoleLabel(role: AdminPlayer["memberships"][number]["role"] | undefined) {
+  switch (role) {
+    case "owner":
+      return "Administrátor";
+    case "coach":
+      return "Tréner";
+    case "player":
+      return "Hráč";
+    default:
+      return "Bez roly";
+  }
 }
 
 function SortHeader({
@@ -64,6 +77,8 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
             return player.firstName || getPlayerName(player);
           case "lastName":
             return player.lastName || "";
+          case "role":
+            return getRoleLabel(primaryMembership?.role);
           case "teamName":
             return primaryMembership?.teamName ?? "";
         }
@@ -124,6 +139,11 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
                 </SortHeader>
               </th>
               <th className="px-5 py-4">
+                <SortHeader active={sortKey === "role"} direction={sortDirection} onClick={() => handleSort("role")}>
+                  Rola
+                </SortHeader>
+              </th>
+              <th className="px-5 py-4">
                 <SortHeader active={sortKey === "teamName"} direction={sortDirection} onClick={() => handleSort("teamName")}>
                   Predvolené družstvo
                 </SortHeader>
@@ -181,6 +201,23 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
                     {isEditing ? (
                       <select
                         form={`player-edit-${player.id}`}
+                        name="role"
+                        defaultValue={primaryMembership?.role ?? "player"}
+                        className="focus-ring w-full min-w-[160px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
+                        required
+                      >
+                        <option value="player">Hráč</option>
+                        <option value="coach">Tréner</option>
+                        <option value="owner">Administrátor</option>
+                      </select>
+                    ) : (
+                      <Badge tone="neutral">{getRoleLabel(primaryMembership?.role)}</Badge>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
+                    {isEditing ? (
+                      <select
+                        form={`player-edit-${player.id}`}
                         name="team_id"
                         defaultValue={primaryMembership?.teamId ?? teams[0]?.id ?? ""}
                         className="focus-ring w-full min-w-[180px] rounded-[8px] border border-court-line bg-white px-3 py-2 text-sm font-bold text-court-ink"
@@ -220,6 +257,7 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
 
                       <form id={`player-edit-${player.id}`} action={updatePlayer}>
                         <input type="hidden" name="profile_id" value={player.id} />
+                        <input type="hidden" name="status" value={primaryMembership?.status ?? "active"} />
                         {!isEditing ? (
                           <>
                             <input type="hidden" name="first_name" value={player.firstName} />
@@ -227,7 +265,6 @@ export function PlayerRoleTable({ players, teams }: PlayerRoleTableProps) {
                             <input type="hidden" name="email" value={player.email ?? ""} />
                             <input type="hidden" name="team_id" value={primaryMembership?.teamId ?? teams[0]?.id ?? ""} />
                             <input type="hidden" name="role" value={primaryMembership?.role ?? "player"} />
-                            <input type="hidden" name="status" value={primaryMembership?.status ?? "active"} />
                           </>
                         ) : null}
                         {isEditing ? (

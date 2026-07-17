@@ -60,6 +60,7 @@ export function CreatePlayerForm({ teams }: CreatePlayerFormProps) {
                   type="email"
                   className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
                   placeholder="hrac@example.com"
+                  required
                 />
               </label>
 
@@ -97,7 +98,7 @@ export function CreatePlayerForm({ teams }: CreatePlayerFormProps) {
                 <span className="text-sm font-bold text-court-ink">Stav</span>
                 <select
                   name="status"
-                  defaultValue="active"
+                  defaultValue="invited"
                   className="focus-ring mt-2 w-full rounded-[8px] border border-court-line bg-white px-3 py-3 text-sm font-bold text-court-ink"
                   required
                 >

@@ -1,12 +1,11 @@
 "use server";
-
-import { randomUUID } from "node:crypto";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/admin";
 import { formatFullName } from "@/lib/player-name";
 import { createAdminClient } from "@/supabase/admin";
-import { getSupabaseConfig } from "@/supabase/env";
+import { getSiteUrl, getSupabaseConfig } from "@/supabase/env";
 import type { TeamMembershipStatus, TeamRole } from "@/types/entities";
 
 function getString(formData: FormData, key: string) {
@@ -41,6 +40,37 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Nepodarilo sa vytvoriť hráča.";
+}
+
+async function getOrigin() {
+  const headerStore = await headers();
+  const configuredSiteUrl = getSiteUrl();
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl.replace(/\/+$/, "");
+  }
+
+  const origin = headerStore.get("origin");
+
+  if (origin) {
+    return origin.replace(/\/+$/, "");
+  }
+
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const forwardedProto = headerStore.get("x-forwarded-proto");
+
+  if (forwardedHost) {
+    return `${forwardedProto ?? "https"}://${forwardedHost}`.replace(/\/+$/, "");
+  }
+
+  const host = headerStore.get("host");
+
+  if (host) {
+    const protocol = host.includes("localhost") ? "http" : "https";
+    return `${protocol}://${host}`.replace(/\/+$/, "");
+  }
+
+  return "http://localhost:3000";
 }
 
 async function getExistingAuthUserIdByEmail(email: string) {
@@ -143,7 +173,11 @@ export async function createPlayer(formData: FormData) {
     redirectWithError("Zadaj meno aj priezvisko hráča.");
   }
 
-  if (email && !isEmail(email)) {
+  if (!email) {
+    redirectWithError("Zadaj e-mail hráča.");
+  }
+
+  if (!isEmail(email)) {
     redirectWithError("Zadaj platný e-mail hráča.");
   }
 
@@ -163,8 +197,8 @@ export async function createPlayer(formData: FormData) {
     redirectWithError("Pre vytvorenie hráča doplň do .env.local premennú SUPABASE_SERVICE_ROLE_KEY.");
   }
 
-  const generatedEmail = email || `hrac-${randomUUID()}@internal.volejbaltatry.local`;
-  let message = "Hráč bol vytvorený a rola bola priradená.";
+  const generatedEmail = email;
+  let message = "Hráč bol vytvorený, rola bola priradená a e-mail na prihlásenie bol odoslaný.";
 
   try {
     const supabase = createAdminClient();
@@ -182,28 +216,26 @@ export async function createPlayer(formData: FormData) {
     let profileId = existingProfile?.id ?? null;
 
     if (!profileId) {
-      const existingAuthUserId = email ? await getExistingAuthUserIdByEmail(email) : null;
+      const existingAuthUserId = await getExistingAuthUserIdByEmail(email);
 
       if (existingAuthUserId) {
         profileId = existingAuthUserId;
         message = "Používateľ už existoval, profil a rola boli doplnené.";
       } else {
-        const { data: createdUser, error: createUserError } = await supabase.auth.admin.createUser({
-          email: generatedEmail,
-          email_confirm: true,
-          password: randomUUID(),
-          user_metadata: {
+        const { data: invitedUser, error: inviteUserError } = await supabase.auth.admin.inviteUserByEmail(email, {
+          data: {
             first_name: firstName,
             full_name: fullName,
             last_name: lastName
-          }
+          },
+          redirectTo: `${await getOrigin()}/auth/callback`
         });
 
-        if (createUserError) {
-          throw createUserError;
+        if (inviteUserError) {
+          throw inviteUserError;
         }
 
-        profileId = createdUser.user.id;
+        profileId = invitedUser.user.id;
       }
 
     } else {
