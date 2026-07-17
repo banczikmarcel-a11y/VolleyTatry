@@ -26,6 +26,16 @@ type TournamentTeamJoinedRow = Database["public"]["Tables"]["tournament_teams"][
   teams: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null;
 };
 
+function fallbackTeamSlug(label: string) {
+  return label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 type TournamentResultAuditLogJoinedRow = Database["public"]["Tables"]["tournament_result_audit_logs"]["Row"] & {
   profiles:
     | { email: string | null; full_name: string | null }
@@ -113,6 +123,8 @@ function mapTournamentTeam(
 ): TournamentTeamRecord {
   const team = getSingleRelation(row.teams);
   const group = row.tournament_group_id ? groupsById.get(row.tournament_group_id) ?? null : null;
+  const resolvedTeamName = team?.name ?? row.display_name ?? "Neznáme družstvo";
+  const resolvedTeamSlug = team?.slug ?? (fallbackTeamSlug(row.display_name ?? resolvedTeamName) || "tournament-team");
 
   return {
     created_at: row.created_at,
@@ -123,8 +135,8 @@ function mapTournamentTeam(
     seed_number: row.seed_number,
     sort_order: row.sort_order,
     team_id: row.team_id,
-    teamName: team?.name ?? "Unknown team",
-    teamSlug: team?.slug ?? "unknown-team",
+    teamName: resolvedTeamName,
+    teamSlug: resolvedTeamSlug,
     tournament_group_id: row.tournament_group_id,
     tournament_id: row.tournament_id,
     updated_at: row.updated_at
@@ -429,7 +441,7 @@ export async function createTournamentRepository() {
     async upsertTournamentTeams(
       rows: readonly Database["public"]["Tables"]["tournament_teams"]["Insert"][]
     ): Promise<TournamentRepositoryResult<TournamentTeamRecord[]>> {
-      const { error } = await supabase.from("tournament_teams").upsert([...rows], { onConflict: "tournament_id,team_id" });
+      const { error } = await supabase.from("tournament_teams").upsert([...rows], { onConflict: "tournament_id,id" });
 
       if (error) {
         return fail(mapError(error));

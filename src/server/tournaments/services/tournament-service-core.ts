@@ -495,43 +495,66 @@ export async function createTournamentServiceWithDependencies(dependencies?: {
         return authResult;
       }
 
-      const [bundleResult, availableTeamsResult] = await Promise.all([
-        repository.getTournamentBundle(input.tournamentId),
-        repository.listAvailableTeams()
-      ]);
+      const bundleResult = await repository.getTournamentBundle(input.tournamentId);
 
       if (!bundleResult.ok) {
         return fail(mapRepositoryError(bundleResult.error));
       }
 
-      if (!availableTeamsResult.ok) {
+      const needsBaseTeamLookup = input.teamIds.some((teamInput) => !teamInput.displayName?.trim() && teamInput.teamId);
+      const availableTeamsResult = needsBaseTeamLookup ? await repository.listAvailableTeams() : null;
+
+      if (availableTeamsResult && !availableTeamsResult.ok) {
         return fail(mapRepositoryError(availableTeamsResult.error));
       }
 
       const groupsByCode = new Map(bundleResult.data.groups.map((group) => [group.code, group]));
-      const teamsById = new Map(availableTeamsResult.data.map((team) => [team.id, team]));
+      const baseTeamsById = new Map(
+        (availableTeamsResult?.ok ? availableTeamsResult.data : []).map((team) => [team.id, team])
+      );
+      const existingLabels = new Set(
+        bundleResult.data.teams
+          .map((team) => (team.display_name ?? team.teamName).trim().toLocaleLowerCase("sk"))
+          .filter((value) => value.length > 0)
+      );
       const currentCounts = new Map(
         bundleResult.data.groups.map((group) => [group.code, bundleResult.data.teams.filter((team) => team.tournament_group_id === group.id).length])
       );
 
       const payloads = input.teamIds.map((teamInput, index) => {
+        const fallbackDisplayName =
+          !teamInput.displayName?.trim() && teamInput.teamId
+            ? baseTeamsById.get(teamInput.teamId)?.name ?? null
+            : null;
+        const resolvedDisplayName = teamInput.displayName?.trim() || fallbackDisplayName;
+        const normalizedLabel = resolvedDisplayName?.toLocaleLowerCase("sk") ?? "";
+
+        if (!resolvedDisplayName || !normalizedLabel) {
+          return null;
+        }
+
+        if (existingLabels.has(normalizedLabel)) {
+          return undefined;
+        }
+
         const groupCode =
           teamInput.groupCode ??
           [...currentCounts.entries()].sort((left, right) => left[1] - right[1] || left[0].localeCompare(right[0], "sk"))[0]?.[0];
         const targetGroup = groupCode ? groupsByCode.get(groupCode) : null;
-        const sourceTeam = teamsById.get(teamInput.teamId);
 
-        if (!targetGroup || !sourceTeam) {
+        if (!targetGroup) {
           return null;
         }
 
         currentCounts.set(groupCode, (currentCounts.get(groupCode) ?? 0) + 1);
+        existingLabels.add(normalizedLabel);
 
         return {
-          display_name: teamInput.displayName ?? sourceTeam.name,
+          display_name: resolvedDisplayName,
+          id: teamInput.teamId ? `tt-${teamInput.teamId}` : crypto.randomUUID(),
           seed_number: teamInput.seedNumber ?? null,
           sort_order: teamInput.sortOrder ?? bundleResult.data.teams.length + index + 1,
-          team_id: teamInput.teamId,
+          team_id: teamInput.teamId ?? null,
           tournament_group_id: targetGroup.id,
           tournament_id: input.tournamentId,
           updated_by: authResult.data
@@ -541,11 +564,20 @@ export async function createTournamentServiceWithDependencies(dependencies?: {
       if (payloads.some((payload) => payload === null)) {
         return fail({
           code: "VALIDATION_FAILED",
-          message: "Every team added to a tournament must reference an existing base team and a valid group."
+          message: "Každé turnajové družstvo musí mať názov a platnú skupinu."
         });
       }
 
-      const saveResult = await repository.upsertTournamentTeams(payloads.filter((payload): payload is NonNullable<typeof payload> => payload !== null));
+      if (payloads.some((payload) => payload === undefined)) {
+        return fail({
+          code: "CONFLICT",
+          message: "Družstvo s rovnakým názvom už v tomto turnaji existuje."
+        });
+      }
+
+      const saveResult = await repository.upsertTournamentTeams(
+        payloads.filter((payload): payload is Exclude<typeof payload, null | undefined> => payload !== null && payload !== undefined)
+      );
       return saveResult.ok ? ok(saveResult.data) : fail(mapRepositoryError(saveResult.error));
     },
 

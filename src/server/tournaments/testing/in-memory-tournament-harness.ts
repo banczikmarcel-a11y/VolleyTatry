@@ -438,43 +438,47 @@ export async function createInMemoryTournamentHarness(adminState: AdminState = D
         id?: string;
         seed_number?: number | null;
         sort_order?: number | null;
-        team_id: string;
+        team_id: string | null;
         tournament_group_id: string;
         tournament_id: string;
       }[]
     ) {
       rows.forEach((row) => {
-        const baseTeam = baseTeams.find((team) => team.id === row.team_id);
+        const baseTeam = row.team_id ? baseTeams.find((team) => team.id === row.team_id) ?? null : null;
         const group = state.groups.find((item) => item.id === row.tournament_group_id);
         const existing = state.teams.find((team) => (row.id ? team.id === row.id : team.tournament_id === row.tournament_id && team.team_id === row.team_id));
 
-        if (!baseTeam || !group) {
+        if (!group || (!baseTeam && !row.display_name?.trim())) {
           return;
         }
 
+        const resolvedName = row.display_name?.trim() || baseTeam?.name || "Turnajové družstvo";
+        const resolvedSlug = (baseTeam?.slug ?? resolvedName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")) || "tournament-team";
+
         const target = existing ?? {
           created_at: "2026-07-17T08:00:00.000Z",
-          display_name: row.display_name ?? baseTeam.name,
+          display_name: resolvedName,
           groupCode: group.code,
           groupName: group.name,
-          id: row.id ?? `tt-${row.team_id}`,
+          id: row.id ?? `tt-${crypto.randomUUID()}`,
           seed_number: row.seed_number ?? null,
           sort_order: row.sort_order ?? null,
           team_id: row.team_id,
-          teamName: baseTeam.name,
-          teamSlug: baseTeam.slug,
+          teamName: resolvedName,
+          teamSlug: resolvedSlug,
           tournament_group_id: row.tournament_group_id,
           tournament_id: row.tournament_id,
           updated_at: "2026-07-17T08:00:00.000Z"
         } satisfies TournamentTeamRecord;
 
-        target.display_name = row.display_name ?? target.display_name ?? baseTeam.name;
+        target.display_name = resolvedName;
         target.groupCode = group.code;
         target.groupName = group.name;
         target.seed_number = row.seed_number ?? null;
         target.sort_order = row.sort_order ?? null;
-        target.teamName = baseTeam.name;
-        target.teamSlug = baseTeam.slug;
+        target.teamName = resolvedName;
+        target.teamSlug = resolvedSlug;
+        target.team_id = row.team_id;
         target.tournament_group_id = row.tournament_group_id;
         target.updated_at = "2026-07-17T08:00:00.000Z";
 

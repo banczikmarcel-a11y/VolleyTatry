@@ -110,13 +110,12 @@ export async function createTournamentAction(formData: FormData) {
 export async function addTournamentTeamAction(formData: FormData) {
   const service = await createTournamentService();
   const tournamentId = getString(formData, "tournament_id");
-  const teamId = getString(formData, "team_id");
   const displayName = getOptionalString(formData, "display_name");
   const groupCodeRaw = getString(formData, "group_code");
   const seedNumber = getNumber(formData, "seed_number");
 
-  if (!tournamentId || !teamId) {
-    redirectWithMessage(`/admin/tournaments/${tournamentId || ""}/teams`, "error", "Chýba turnaj alebo tím.");
+  if (!tournamentId || !displayName) {
+    redirectWithMessage(`/admin/tournaments/${tournamentId || ""}/teams`, "error", "Chýba turnaj alebo názov družstva.");
   }
 
   const result = await service.addTeamsToTournament({
@@ -124,8 +123,7 @@ export async function addTournamentTeamAction(formData: FormData) {
       {
         displayName,
         groupCode: groupCodeRaw === "A" || groupCodeRaw === "B" ? groupCodeRaw : undefined,
-        seedNumber: Number.isInteger(seedNumber) && seedNumber > 0 ? seedNumber : null,
-        teamId
+        seedNumber: Number.isInteger(seedNumber) && seedNumber > 0 ? seedNumber : null
       }
     ],
     tournamentId

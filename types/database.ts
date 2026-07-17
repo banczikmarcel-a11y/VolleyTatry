@@ -359,7 +359,7 @@ export type Database = {
           id: string;
           seed_number: number | null;
           sort_order: number | null;
-          team_id: string;
+          team_id: string | null;
           tournament_group_id: string;
           tournament_id: string;
           updated_at: string;
@@ -372,7 +372,7 @@ export type Database = {
           id?: string;
           seed_number?: number | null;
           sort_order?: number | null;
-          team_id: string;
+          team_id?: string | null;
           tournament_group_id: string;
           tournament_id: string;
           updated_at?: string;
@@ -385,7 +385,7 @@ export type Database = {
           id?: string;
           seed_number?: number | null;
           sort_order?: number | null;
-          team_id?: string;
+          team_id?: string | null;
           tournament_group_id?: string;
           tournament_id?: string;
           updated_at?: string;

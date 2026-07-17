@@ -234,7 +234,7 @@ export type AddTournamentTeamsInput = {
     groupCode?: TournamentGroupCode;
     seedNumber?: number | null;
     sortOrder?: number | null;
-    teamId: string;
+    teamId?: string;
   }[];
   tournamentId: string;
 };
