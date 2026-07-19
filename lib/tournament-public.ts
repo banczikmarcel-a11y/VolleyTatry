@@ -213,3 +213,80 @@ export function sortTournamentMatchesLatestFirst(matches: readonly TournamentMat
     return left.id.localeCompare(right.id);
   });
 }
+
+export function getTournamentFinalStandingsOverview(bundle: TournamentBundle) {
+  const teamStats = new Map(
+    bundle.teams.map((team) => [
+      team.id,
+      {
+        groupCode: team.groupCode,
+        losses: 0,
+        played: 0,
+        pointsAgainst: 0,
+        pointsFor: 0,
+        teamId: team.id,
+        teamName: team.display_name ?? team.teamName,
+        wins: 0
+      }
+    ])
+  );
+
+  bundle.matches
+    .filter((match) => match.status === "completed" && match.home_tournament_team_id && match.away_tournament_team_id && match.sets.length > 0)
+    .forEach((match) => {
+      const validation = validateMatchResult({
+        profile: match.phase === "group_stage" ? "GROUP_TIMED_MATCH" : "PLAYOFF_BEST_OF_THREE_TO_15",
+        sets: match.sets.map((set) => ({
+          awayPoints: set.away_points,
+          homePoints: set.home_points,
+          setNumber: set.set_number
+        }))
+      });
+
+      if (!validation.ok) {
+        return;
+      }
+
+      const homeStats = teamStats.get(match.home_tournament_team_id!);
+      const awayStats = teamStats.get(match.away_tournament_team_id!);
+
+      if (!homeStats || !awayStats) {
+        return;
+      }
+
+      homeStats.played += 1;
+      awayStats.played += 1;
+
+      homeStats.pointsFor += validation.summary.home.totalRallyPoints;
+      homeStats.pointsAgainst += validation.summary.away.totalRallyPoints;
+      awayStats.pointsFor += validation.summary.away.totalRallyPoints;
+      awayStats.pointsAgainst += validation.summary.home.totalRallyPoints;
+
+      if (validation.summary.outcome === "home_win") {
+        homeStats.wins += 1;
+        awayStats.losses += 1;
+      } else if (validation.summary.outcome === "away_win") {
+        awayStats.wins += 1;
+        homeStats.losses += 1;
+      }
+    });
+
+  return bundle.finalStandings
+    .slice()
+    .sort((left, right) => left.final_position - right.final_position)
+    .map((standing) => {
+      const stats = teamStats.get(standing.tournament_team_id);
+
+      return {
+        groupCode: stats?.groupCode ?? null,
+        losses: stats?.losses ?? 0,
+        played: stats?.played ?? 0,
+        pointsAgainst: stats?.pointsAgainst ?? 0,
+        pointsFor: stats?.pointsFor ?? 0,
+        position: standing.final_position,
+        teamId: standing.tournament_team_id,
+        teamName: stats?.teamName ?? standing.tournament_team_id,
+        wins: stats?.wins ?? 0
+      };
+    });
+}
