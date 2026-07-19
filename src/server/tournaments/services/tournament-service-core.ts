@@ -610,8 +610,10 @@ export async function createTournamentServiceWithDependencies(dependencies?: {
           return null;
         }
 
+        const displayName = assignment.displayName?.trim() || team.display_name || team.teamName;
+
         return {
-          display_name: team.display_name,
+          display_name: displayName,
           id: team.id,
           seed_number: assignment.seedNumber ?? team.seed_number,
           sort_order: assignment.sortOrder ?? team.sort_order,

@@ -151,6 +151,7 @@ export async function saveTournamentGroupsAction(formData: FormData) {
     .map(([key, value]) => {
       const tournamentTeamId = key.replace("group_for_", "");
       const groupCode: TournamentGroupCode | null = typeof value === "string" && (value === "A" || value === "B") ? value : null;
+      const displayName = getOptionalString(formData, `name_for_${tournamentTeamId}`);
       const seedRaw = getString(formData, `seed_for_${tournamentTeamId}`);
       const sortRaw = getString(formData, `sort_for_${tournamentTeamId}`);
       const seedNumber = Number(seedRaw);
@@ -158,6 +159,7 @@ export async function saveTournamentGroupsAction(formData: FormData) {
 
       return groupCode
         ? {
+            displayName,
             groupCode,
             seedNumber: Number.isInteger(seedNumber) && seedNumber > 0 ? seedNumber : null,
             sortOrder: Number.isInteger(sortOrder) && sortOrder > 0 ? sortOrder : null,

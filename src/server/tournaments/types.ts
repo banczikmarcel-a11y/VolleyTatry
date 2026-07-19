@@ -241,6 +241,7 @@ export type AddTournamentTeamsInput = {
 
 export type AssignTournamentTeamsToGroupsInput = {
   assignments: readonly {
+    displayName?: string | null;
     groupCode: TournamentGroupCode;
     seedNumber?: number | null;
     sortOrder?: number | null;

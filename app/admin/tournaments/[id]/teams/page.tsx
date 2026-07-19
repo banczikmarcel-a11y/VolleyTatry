@@ -93,6 +93,15 @@ export default async function TournamentTeamsPage({ params, searchParams }: Page
                 </div>
                 <p className="text-xs font-black uppercase text-court-mint">#{index + 1}</p>
               </div>
+              <label className="grid gap-2">
+                <span className="text-xs font-bold text-court-blue">Názov družstva</span>
+                <input
+                  name={`name_for_${team.id}`}
+                  defaultValue={team.display_name ?? team.teamName}
+                  required
+                  className="focus-ring min-h-12 rounded-[8px] border border-court-line px-4 py-3 text-base font-bold"
+                />
+              </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-2">
                   <span className="text-xs font-bold text-court-blue">Skupina</span>
