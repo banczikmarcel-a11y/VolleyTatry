@@ -1,7 +1,7 @@
 import { Dumbbell, ShieldCheck, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { FormCard } from "@/components/ui/card";
-import { signInWithGoogle, signInWithPassword, signUpWithPassword } from "@/app/auth/actions";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { signInWithEmail, signUpWithPassword } from "@/app/auth/actions";
 
 type AuthFormProps = {
   title: string;
@@ -28,7 +28,7 @@ export function AuthForm({
   isConfigured = true,
   next = "/dashboard"
 }: AuthFormProps) {
-  const primaryAction = mode === "login" ? signInWithPassword : signUpWithPassword;
+  const primaryAction = mode === "login" ? signInWithEmail : signUpWithPassword;
   const isLogin = mode === "login";
 
   return (
@@ -99,18 +99,20 @@ export function AuthForm({
             />
           </label>
 
-          <label className="block">
-            <span className="text-[13px] font-bold text-court-ink sm:text-sm">Heslo</span>
-            <input
-              type="password"
-              name="password"
-              autoComplete={showName ? "new-password" : "current-password"}
-              className="focus-ring mt-1.5 w-full rounded-[8px] border border-court-line px-3 py-2.5 text-sm text-court-ink sm:mt-2 sm:py-3"
-              minLength={showName ? 8 : undefined}
-              placeholder={showName ? "aspon 8 znakov" : "password"}
-              required
-            />
-          </label>
+          {mode === "register" ? (
+            <label className="block">
+              <span className="text-[13px] font-bold text-court-ink sm:text-sm">Heslo</span>
+              <input
+                type="password"
+                name="password"
+                autoComplete={showName ? "new-password" : "current-password"}
+                className="focus-ring mt-1.5 w-full rounded-[8px] border border-court-line px-3 py-2.5 text-sm text-court-ink sm:mt-2 sm:py-3"
+                minLength={showName ? 8 : undefined}
+                placeholder={showName ? "aspon 8 znakov" : "password"}
+                required
+              />
+            </label>
+          ) : null}
 
           {showPasswordConfirmation ? (
             <label className="block">
@@ -128,33 +130,17 @@ export function AuthForm({
           ) : null}
         </div>
 
-        <Button
-          type="submit"
-          disabled={!isConfigured}
+        <SubmitButton
           className="mt-6 w-full py-3"
-        >
-          {submitLabel}
-        </Button>
-
-        <div className="mt-3 flex items-center gap-3">
-          <div className="h-px flex-1 bg-court-line" />
-          <span className="text-xs font-black uppercase text-court-blue">alebo</span>
-          <div className="h-px flex-1 bg-court-line" />
-        </div>
-
-        <Button
-          type="submit"
-          formAction={signInWithGoogle}
-          variant="secondary"
           disabled={!isConfigured}
-          className="mt-3 w-full py-3"
-        >
-          Pokračovať cez Google
-        </Button>
+          idleLabel={submitLabel}
+          pendingLabel={isLogin ? "Posielam odkaz..." : "Registrujem..."}
+          variant="primary"
+        />
 
         {mode === "login" ? (
           <p className="mt-4 text-center text-xs leading-5 text-court-blue">
-            Prihlásenie je dostupné cez e-mail a heslo alebo cez Google účet. Magic link v aplikácii nepoužívame ako hlavnú prihlasovaciu cestu.
+            Zadaj e-mail, ktorý je priradený hráčovi v zozname. Na tento e-mail pošleme prihlasovací odkaz.
           </p>
         ) : null}
       </div>

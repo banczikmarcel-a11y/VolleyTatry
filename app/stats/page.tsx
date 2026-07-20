@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Filter } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -10,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { getAttendanceStats, getStats } from "@/lib/stats";
 import { getPlayerOptions, getPlayerProfileById } from "@/lib/profile";
 import { cn } from "@/lib/utils";
-import { requireApplicationUser } from "@/src/server/auth";
+import { requireApplicationUser, resolveApplicationSession } from "@/src/server/auth";
 
 type StatsPageProps = {
   searchParams?: Promise<{
@@ -23,21 +24,42 @@ type StatsPageProps = {
 };
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
-  await requireApplicationUser("/stats");
   const params = await searchParams;
   const view = params?.view === "player" ? "player" : params?.view === "attendance" ? "attendance" : "team";
   const selectedPlayerId = params?.player?.trim() ? params.player : null;
-  const [
-    { availableMonths, availableQuarters, error, filteredMatchesCount, isConfigured, records, selectedMonth, selectedQuarter, selectedYear, years },
-    { error: playersError, players, isConfigured: playersConfigured },
-    playerProfileResult,
-    attendanceResult
-  ] = await Promise.all([
-    getStats(params?.year, params?.quarter, params?.month),
-    getPlayerOptions(),
-    selectedPlayerId ? getPlayerProfileById(selectedPlayerId) : Promise.resolve({ error: null, isConfigured: true, profile: null }),
-    getAttendanceStats(params?.year)
-  ]);
+  const requestedPath = `/stats${
+    params
+      ? `?${new URLSearchParams(
+          Object.entries(params).flatMap(([key, value]) => (typeof value === "string" && value ? [[key, value]] : []))
+        ).toString()}`
+      : ""
+  }`;
+  const requiresAuthenticatedView = view === "player" || view === "attendance";
+
+  let canAccessRestrictedViews = false;
+
+  if (requiresAuthenticatedView) {
+    await requireApplicationUser(requestedPath);
+    canAccessRestrictedViews = true;
+  } else {
+    const session = await resolveApplicationSession();
+    canAccessRestrictedViews = session.isAuthenticated && session.status === "active";
+  }
+
+  const teamStatsResult = await getStats(params?.year, params?.quarter, params?.month);
+  const { availableMonths, availableQuarters, error, filteredMatchesCount, isConfigured, records, selectedMonth, selectedQuarter, selectedYear, years } =
+    teamStatsResult;
+  const playersResult = canAccessRestrictedViews
+    ? await getPlayerOptions()
+    : { error: null, isConfigured: false, players: [] };
+  const playerProfileResult =
+    canAccessRestrictedViews && selectedPlayerId
+      ? await getPlayerProfileById(selectedPlayerId)
+      : { error: null, isConfigured: false, profile: null };
+  const attendanceResult = canAccessRestrictedViews
+    ? await getAttendanceStats(params?.year)
+    : { error: null, isConfigured: false, rows: [], selectedYear, years: [selectedYear] };
+  const { error: playersError, players, isConfigured: playersConfigured } = playersResult;
 
   const buildStatsHref = (year: number, quarter?: number | null, month?: number | null) => {
     const query = new URLSearchParams({ year: String(year) });
@@ -77,19 +99,41 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         <Link href="/stats" className={buttonClasses({ className: view === "team" ? "" : "bg-transparent", variant: view === "team" ? "primary" : "ghost" })}>
           Tímová bilancia
         </Link>
-        <Link
-          href={selectedPlayerId ? `/stats?view=player&player=${selectedPlayerId}` : "/stats?view=player"}
-          className={buttonClasses({ className: view === "player" ? "" : "bg-transparent", variant: view === "player" ? "primary" : "ghost" })}
-        >
-          Štatistika hráča
-        </Link>
-        <Link
-          href="/stats?view=attendance"
-          className={buttonClasses({ className: view === "attendance" ? "" : "bg-transparent", variant: view === "attendance" ? "primary" : "ghost" })}
-        >
-          Účasť
-        </Link>
+        {canAccessRestrictedViews ? (
+          <>
+            <Link
+              href={selectedPlayerId ? `/stats?view=player&player=${selectedPlayerId}` : "/stats?view=player"}
+              className={buttonClasses({ className: view === "player" ? "" : "bg-transparent", variant: view === "player" ? "primary" : "ghost" })}
+            >
+              Štatistika hráča
+            </Link>
+            <Link
+              href="/stats?view=attendance"
+              className={buttonClasses({ className: view === "attendance" ? "" : "bg-transparent", variant: view === "attendance" ? "primary" : "ghost" })}
+            >
+              Účasť
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link href="/login?next=%2Fstats%3Fview%3Dplayer" className={buttonClasses({ className: "bg-transparent", variant: "ghost" })}>
+              Štatistika hráča
+            </Link>
+            <Link href="/login?next=%2Fstats%3Fview%3Dattendance" className={buttonClasses({ className: "bg-transparent", variant: "ghost" })}>
+              Účasť
+            </Link>
+          </>
+        )}
       </div>
+
+      {!canAccessRestrictedViews ? (
+        <Card className="border-court-line bg-court-ice">
+          <p className="text-sm font-black uppercase text-court-mint">Verejný prehľad</p>
+          <p className="mt-2 text-sm leading-6 text-court-blue">
+            Tímová bilancia Tatry vs. Ostatní je dostupná bez prihlásenia. Hráčske štatistiky a účasť zostávajú dostupné po prihlásení.
+          </p>
+        </Card>
+      ) : null}
 
       {view === "player" ? (
         <>

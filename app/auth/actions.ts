@@ -2,10 +2,11 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/supabase/admin";
 import { createClient } from "@/supabase/server";
-import { getSiteUrl } from "@/supabase/env";
+import { getSiteUrl, getSupabaseConfig } from "@/supabase/env";
 import { resolveApplicationSession } from "@/src/server/auth";
-import { getPostAuthRedirectPath, getVerificationRedirect } from "@/src/server/auth/redirects";
+import { getVerificationRedirect } from "@/src/server/auth/redirects";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -17,7 +18,7 @@ function getOptionalString(formData: FormData, key: string) {
   return value || null;
 }
 
-function redirectWith(pathname: string, type: "error" | "message", message: string) {
+function redirectWith(pathname: string, type: "error" | "message", message: string): never {
   const params = new URLSearchParams({ [type]: message });
   redirect(`${pathname}?${params.toString()}`);
 }
@@ -38,16 +39,8 @@ function validatePassword(password: string) {
 function mapSignInError(message: string) {
   const value = message.toLowerCase();
 
-  if (value.includes("invalid login credentials")) {
-    return "Nesprávny e-mail alebo heslo.";
-  }
-
-  if (value.includes("email not confirmed")) {
-    return "E-mail ešte nebol overený.";
-  }
-
-  if (value.includes("user not found")) {
-    return "Účet s týmto e-mailom neexistuje.";
+  if (value.includes("user not found") || value.includes("invalid login credentials")) {
+    return "Tento e-mail nemá povolený prístup do aplikácie.";
   }
 
   if (value.includes("too many requests")) {
@@ -110,32 +103,59 @@ function requireEmailValue(email: string | null): string {
   return email;
 }
 
-export async function signInWithPassword(formData: FormData) {
+async function findLoginProfileByEmail(email: string) {
+  if (!getSupabaseConfig().serviceRoleKey) {
+    return null;
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,is_active,email")
+    .eq("email_normalized", email.trim().toLowerCase())
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function signInWithEmail(formData: FormData) {
   const email = getString(formData, "email");
-  const password = getString(formData, "password");
   const next = getRedirectPath(formData);
 
   if (!validateEmail(email)) {
     redirectWith("/login", "error", "Zadaj platný e-mail.");
   }
 
-  if (!password) {
-    redirectWith("/login", "error", "Zadaj heslo.");
+  const loginProfile = await findLoginProfileByEmail(email);
+
+  if (!loginProfile || !loginProfile.email) {
+    redirectWith("/login", "error", "Tento e-mail sa nenašiel medzi hráčmi s povoleným prístupom.");
   }
 
+  if (!loginProfile.is_active) {
+    redirectWith("/login", "error", "Tento účet je momentálne deaktivovaný.");
+  }
+
+  const origin = await getOrigin();
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      shouldCreateUser: true
+    }
+  });
 
   if (error) {
-    if (error.message.toLowerCase().includes("email not confirmed")) {
-      redirect(getVerificationRedirect(next, email));
-    }
-
     redirectWith("/login", "error", mapSignInError(error.message));
   }
 
-  const session = await resolveApplicationSession();
-  redirect(getPostAuthRedirectPath(session, next));
+  redirect(`/login?message=${encodeURIComponent("Prihlasovací odkaz sme poslali na tvoj e-mail.")}&next=${encodeURIComponent(next)}`);
 }
 
 export async function signInWithGoogle(formData: FormData) {

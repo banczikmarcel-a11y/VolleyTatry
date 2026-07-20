@@ -54,7 +54,7 @@ export default async function AdminPlayersPage({ searchParams }: AdminPlayersPag
         <Card>
           <p className="text-sm font-black uppercase text-court-mint">Bez hráčov</p>
           <p className="mt-2 text-sm leading-6 text-court-blue">
-            Profily sa vytvárajú automaticky po registrácii používateľa.
+            Hráčov vytvoríš tu v administrácii a následne sa prihlásia cez svoj e-mailový odkaz.
           </p>
         </Card>
       ) : null}

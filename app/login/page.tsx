@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { QueryToast } from "@/components/ui/query-toast";
@@ -45,8 +44,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div>
       <AuthForm
         title="Vitaj späť"
-        description="Prihlás sa do klubového priestoru Volejbal Tatry."
-        submitLabel="Prihlásiť sa"
+        description="Prihlás sa e-mailovým odkazom. Prístup dostanú iba e-maily priradené k hráčom v aplikácii."
+        submitLabel="Poslať prihlasovací odkaz"
         mode="login"
         error={params?.error}
         message={params?.message}
@@ -54,10 +53,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         next={params?.next}
       />
       <p className="mt-4 text-center text-sm text-court-blue sm:mt-5">
-        Ešte nemáš účet?{" "}
-        <Link href="/register" className="font-bold text-court-ink underline decoration-court-mint underline-offset-4">
-          Registrácia
-        </Link>
+        Prístup nastavuje administrátor cez zoznam hráčov.
       </p>
       </div>
     </div>
