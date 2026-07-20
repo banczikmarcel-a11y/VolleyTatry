@@ -5,7 +5,7 @@ import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { QueryToast } from "@/components/ui/query-toast";
 import { getMatches } from "@/lib/matches";
-import { getCurrentUser } from "@/supabase/server";
+import { requireApplicationUser } from "@/src/server/auth";
 
 type MatchesPageProps = {
   searchParams?: Promise<{
@@ -16,8 +16,8 @@ type MatchesPageProps = {
 
 export default async function MatchesPage({ searchParams }: MatchesPageProps) {
   const params = await searchParams;
-  const user = await getCurrentUser();
-  const { error, isConfigured, matches } = await getMatches(user?.id);
+  const session = await requireApplicationUser("/matches");
+  const { error, isConfigured, matches } = await getMatches(session.profileId);
 
   return (
     <div className="space-y-6 sm:space-y-8">

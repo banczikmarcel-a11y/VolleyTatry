@@ -6,6 +6,7 @@ import { createAdminClient } from "@/supabase/admin";
 import { getSupabaseConfig } from "@/supabase/env";
 import { createClient } from "@/supabase/server";
 import { requireAdminUser } from "@/lib/admin";
+import { requireApplicationUser } from "@/src/server/auth";
 import type { MatchResponseStatus } from "@/types/entities";
 
 type ActionResult = {
@@ -44,17 +45,9 @@ function getErrorResult(error: unknown, fallback: string): ActionResult {
   };
 }
 
-async function getCurrentUserOrRedirect(matchId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login?next=/matches/${matchId}`);
-  }
-
-  return { supabase, user };
+async function getCurrentApplicationUserOrRedirect(matchId: string) {
+  const session = await requireApplicationUser(`/matches/${matchId}`);
+  return session;
 }
 
 async function getProfilePreferredTeamSide(matchId: string, profileId: string): Promise<TeamSide | null> {
@@ -167,10 +160,10 @@ export async function saveMatchResponse(formData: FormData) {
     redirect("/matches?error=Neplatná odpoveď na zápas.");
   }
 
-  const { user } = await getCurrentUserOrRedirect(matchId);
+  const session = await getCurrentApplicationUserOrRedirect(matchId);
 
   try {
-    await upsertMatchResponse(matchId, user.id, status);
+    await upsertMatchResponse(matchId, session.profileId, status);
   } catch (error) {
     redirect(`/matches/${matchId}?error=${encodeURIComponent(error instanceof Error ? error.message : "Nepodarilo sa uložiť odpoveď.")}`);
   }
@@ -186,8 +179,8 @@ export async function saveMatchResponse(formData: FormData) {
 
 export async function submitMatchResponse(matchId: string, status: Extract<MatchResponseStatus, "available" | "unavailable">): Promise<ActionResult> {
   try {
-    const { user } = await getCurrentUserOrRedirect(matchId);
-    await upsertMatchResponse(matchId, user.id, status);
+    const session = await getCurrentApplicationUserOrRedirect(matchId);
+    await upsertMatchResponse(matchId, session.profileId, status);
     revalidateMatchViews(matchId);
 
     return {
@@ -226,10 +219,10 @@ export async function submitHomeMatchSignup({
   }
 
   try {
-    const { user } = await getCurrentUserOrRedirect(matchId);
-    const targetProfileId = profileId?.trim() || user.id;
+    const session = await getCurrentApplicationUserOrRedirect(matchId);
+    const targetProfileId = profileId?.trim() || session.profileId;
 
-    if (targetProfileId === user.id) {
+    if (targetProfileId === session.profileId) {
       await upsertMatchResponse(matchId, targetProfileId, status);
     } else {
       if (!getSupabaseConfig().serviceRoleKey) {
@@ -257,7 +250,7 @@ export async function submitHomeMatchSignup({
 
     return {
       message:
-        targetProfileId === user.id
+        targetProfileId === session.profileId
           ? status === "available"
             ? "Prihlásenie na zápas bolo uložené."
             : "Odhlásenie zo zápasu bolo uložené."
@@ -285,7 +278,7 @@ export async function saveMatchLineupAssignment({
   }
 
   try {
-    await getCurrentUserOrRedirect(matchId);
+    await getCurrentApplicationUserOrRedirect(matchId);
 
     if (!getSupabaseConfig().serviceRoleKey) {
       return { error: "Chýba service role key pre uloženie zostavy.", ok: false };

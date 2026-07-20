@@ -126,13 +126,19 @@ async function upsertMembership({
   return error;
 }
 
+function getApplicationRoleFromMembershipRole(role: TeamRole): "admin" | "user" {
+  return role === "owner" || role === "coach" ? "admin" : "user";
+}
+
 async function updateAuthUserProfile({
+  authUserId,
   email,
   firstName,
   fullName,
   lastName,
   profileId
 }: {
+  authUserId: string | null;
   email: string | null;
   firstName: string;
   fullName: string;
@@ -144,7 +150,11 @@ async function updateAuthUserProfile({
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase.auth.admin.updateUserById(profileId, {
+  if (!authUserId) {
+    return;
+  }
+
+  const { error } = await supabase.auth.admin.updateUserById(authUserId, {
     ...(email ? { email, email_confirm: true } : {}),
     user_metadata: {
       first_name: firstName,
@@ -204,8 +214,8 @@ export async function createPlayer(formData: FormData) {
     const supabase = createAdminClient();
     const { data: existingProfile, error: profileLookupError } = await supabase
       .from("profiles")
-      .select("id")
-      .ilike("email", generatedEmail)
+      .select("id,auth_user_id")
+      .eq("email_normalized", generatedEmail)
       .limit(1)
       .maybeSingle();
 
@@ -214,12 +224,13 @@ export async function createPlayer(formData: FormData) {
     }
 
     let profileId = existingProfile?.id ?? null;
+    let authUserId = existingProfile?.auth_user_id ?? null;
 
     if (!profileId) {
       const existingAuthUserId = await getExistingAuthUserIdByEmail(email);
 
       if (existingAuthUserId) {
-        profileId = existingAuthUserId;
+        authUserId = existingAuthUserId;
         message = "Používateľ už existoval, profil a rola boli doplnené.";
       } else {
         const { data: invitedUser, error: inviteUserError } = await supabase.auth.admin.inviteUserByEmail(email, {
@@ -235,23 +246,60 @@ export async function createPlayer(formData: FormData) {
           throw inviteUserError;
         }
 
-        profileId = invitedUser.user.id;
+        authUserId = invitedUser.user.id;
       }
 
     } else {
       message = "Hráč už existoval, rola bola priradená.";
     }
 
-    const { error: profileUpsertError } = await supabase.from("profiles").upsert({
+    if (authUserId && !profileId) {
+      const { data: linkedProfile, error: linkedProfileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("auth_user_id", authUserId)
+        .maybeSingle();
+
+      if (linkedProfileError) {
+        throw linkedProfileError;
+      }
+
+      profileId = linkedProfile?.id ?? null;
+    }
+
+    const applicationRole = getApplicationRoleFromMembershipRole(role);
+    const profilePayload = {
+      auth_user_id: authUserId,
+      display_name: fullName,
       email: email || null,
       first_name: firstName,
       full_name: fullName,
-      id: profileId,
-      last_name: lastName
-    });
+      is_active: status !== "inactive",
+      last_name: lastName,
+      role: applicationRole
+    };
+
+    let profileUpsertError = null;
+
+    if (profileId) {
+      const { error } = await supabase.from("profiles").update(profilePayload).eq("id", profileId);
+      profileUpsertError = error;
+    } else {
+      const { data: createdProfile, error } = await supabase
+        .from("profiles")
+        .insert(profilePayload)
+        .select("id")
+        .single();
+      profileUpsertError = error;
+      profileId = createdProfile?.id ?? null;
+    }
 
     if (profileUpsertError) {
       throw profileUpsertError;
+    }
+
+    if (!profileId) {
+      throw new Error("Profil hráča sa nepodarilo vytvoriť.");
     }
 
     const membershipError = await upsertMembership({ profileId, role, status, teamId });
@@ -295,6 +343,19 @@ export async function savePlayerRole(formData: FormData) {
     redirectWithError(error.message);
   }
 
+  const supabase = createAdminClient();
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      is_active: status !== "inactive",
+      role: getApplicationRoleFromMembershipRole(role)
+    })
+    .eq("id", profileId);
+
+  if (profileError) {
+    redirectWithError(profileError.message);
+  }
+
   revalidatePath("/admin/players");
   redirect(`/admin/players?message=${encodeURIComponent("Rola bola uložená.")}`);
 }
@@ -333,13 +394,18 @@ export async function updatePlayer(formData: FormData) {
 
   try {
     const supabase = createAdminClient();
+    const applicationRole = getApplicationRoleFromMembershipRole(role);
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
+        display_name: fullName,
         email: email || null,
         first_name: firstName,
         full_name: fullName,
+        is_active: status !== "inactive",
         last_name: lastName
+        ,
+        role: applicationRole
       })
       .eq("id", profileId);
 
@@ -347,7 +413,18 @@ export async function updatePlayer(formData: FormData) {
       throw profileError;
     }
 
+    const { data: profileRow, error: profileLookupError } = await supabase
+      .from("profiles")
+      .select("auth_user_id")
+      .eq("id", profileId)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      throw profileLookupError;
+    }
+
     await updateAuthUserProfile({
+      authUserId: profileRow?.auth_user_id ?? null,
       email: email || null,
       firstName,
       fullName,
@@ -384,6 +461,15 @@ export async function deletePlayer(formData: FormData) {
 
   try {
     const supabase = createAdminClient();
+    const { data: profileRow, error: profileLookupError } = await supabase
+      .from("profiles")
+      .select("auth_user_id")
+      .eq("id", profileId)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      throw profileLookupError;
+    }
 
     const { error: lineupsError } = await supabase.from("match_lineups").delete().eq("profile_id", profileId);
 
@@ -409,10 +495,18 @@ export async function deletePlayer(formData: FormData) {
       throw matchesError;
     }
 
-    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(profileId);
+    if (profileRow?.auth_user_id) {
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(profileRow.auth_user_id);
 
-    if (authDeleteError) {
-      throw authDeleteError;
+      if (authDeleteError) {
+        throw authDeleteError;
+      }
+    }
+
+    const { error: profileDeleteError } = await supabase.from("profiles").delete().eq("id", profileId);
+
+    if (profileDeleteError) {
+      throw profileDeleteError;
     }
   } catch (error) {
     console.error("[players:delete]", { error, profileId });

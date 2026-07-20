@@ -6,32 +6,47 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null;
+          auth_user_id: string | null;
           created_at: string;
+          display_name: string;
           email: string | null;
+          email_normalized: string | null;
           first_name: string | null;
           full_name: string | null;
           id: string;
+          is_active: boolean;
           last_name: string | null;
+          role: string;
           updated_at: string;
         };
         Insert: {
           avatar_url?: string | null;
+          auth_user_id?: string | null;
           created_at?: string;
+          display_name?: string;
           email?: string | null;
+          email_normalized?: never;
           first_name?: string | null;
           full_name?: string | null;
-          id: string;
+          id?: string;
+          is_active?: boolean;
           last_name?: string | null;
+          role?: string;
           updated_at?: string;
         };
         Update: {
           avatar_url?: string | null;
+          auth_user_id?: string | null;
           created_at?: string;
+          display_name?: string;
           email?: string | null;
+          email_normalized?: never;
           first_name?: string | null;
           full_name?: string | null;
           id?: string;
+          is_active?: boolean;
           last_name?: string | null;
+          role?: string;
           updated_at?: string;
         };
         Relationships: [];

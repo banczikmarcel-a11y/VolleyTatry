@@ -13,20 +13,27 @@ export type AdminPlayerMembership = {
 };
 
 export type AdminPlayer = {
+  authUserId: string | null;
   email: string | null;
   firstName: string;
   fullName: string | null;
   id: string;
+  isActive: boolean;
   lastName: string;
+  role: "admin" | "user";
   memberships: AdminPlayerMembership[];
 };
 
 type ProfileRow = {
+  auth_user_id: string | null;
+  display_name: string;
   email: string | null;
   first_name: string | null;
   full_name: string | null;
   id: string;
+  is_active: boolean;
   last_name: string | null;
+  role: "admin" | "user";
 };
 
 type MembershipRow = {
@@ -49,7 +56,7 @@ export async function getAdminPlayers(): Promise<{
   const config = getSupabaseConfig();
   const supabase = config.serviceRoleKey ? createAdminClient() : await createClient();
   const [profilesResult, membershipsResult, teamsResult] = await Promise.all([
-    supabase.from("profiles").select("id,email,full_name,first_name,last_name").order("last_name", { ascending: true }).order("first_name", { ascending: true }),
+    supabase.from("profiles").select("id,auth_user_id,display_name,email,full_name,first_name,last_name,is_active,role").order("last_name", { ascending: true }).order("first_name", { ascending: true }),
     supabase.from("team_memberships").select("id,profile_id,team_id,role,status"),
     supabase.from("teams").select("id,name")
   ]);
@@ -88,11 +95,14 @@ export async function getAdminPlayers(): Promise<{
       const lastName = profile.last_name ?? fallbackName.lastName;
 
       return {
+        authUserId: profile.auth_user_id,
         email: profile.email,
         firstName,
         fullName: formatFullName(firstName, lastName, profile.full_name),
         id: profile.id,
+        isActive: profile.is_active,
         lastName,
+        role: profile.role,
         memberships: membershipsByProfileId.get(profile.id) ?? []
       };
     })

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { QueryToast } from "@/components/ui/query-toast";
 import { getSupabaseConfig } from "@/supabase/env";
-import { getCurrentUser } from "@/supabase/server";
+import { resolveApplicationSession } from "@/src/server/auth";
 
 type RegisterPageProps = {
   searchParams?: Promise<{
@@ -15,9 +15,9 @@ type RegisterPageProps = {
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   const params = await searchParams;
   const config = getSupabaseConfig();
-  const user = await getCurrentUser();
+  const session = await resolveApplicationSession();
 
-  if (user) {
+  if (session.isAuthenticated && session.status === "active") {
     redirect("/dashboard");
   }
 
@@ -31,6 +31,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         submitLabel="Vytvoriť účet"
         mode="register"
         showName
+        showPasswordConfirmation
         error={params?.error}
         message={params?.message}
         isConfigured={config.isConfigured}

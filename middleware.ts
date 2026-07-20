@@ -3,7 +3,7 @@ import { getSupabaseConfig } from "@/supabase/env";
 import { updateSession } from "@/supabase/middleware";
 
 const protectedRoutes = ["/dashboard", "/matches", "/stats", "/profile", "/admin"];
-const authRoutes = ["/login", "/register"];
+const authRoutes = ["/login", "/register", "/auth"];
 
 function matchesRoute(pathname: string, routes: string[]) {
   return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
@@ -28,10 +28,6 @@ export async function middleware(request: NextRequest) {
     redirectUrl.searchParams.set("next", pathname);
 
     return NextResponse.redirect(redirectUrl);
-  }
-
-  if (user && matchesRoute(pathname, authRoutes)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;

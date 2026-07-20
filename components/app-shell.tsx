@@ -4,42 +4,22 @@ import { Dumbbell, UserCircle } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { MobileNav } from "@/components/mobile-nav";
 import { buttonClasses } from "@/components/ui/button";
-import { withTimeout } from "@/lib/async";
-import { getAdminState } from "@/lib/admin";
-import { adminNavigationItems, publicNavigationItems } from "@/lib/navigation";
-import { formatFullName } from "@/lib/player-name";
-import { getCurrentUser } from "@/supabase/server";
+import { adminNavigationItems, anonymousNavigationItems, authenticatedNavigationItems } from "@/lib/navigation";
+import { getApplicationNavigationState } from "@/src/server/auth";
 
 type AppShellProps = {
   children: ReactNode;
 };
 
-function getUserLabel(user: Awaited<ReturnType<typeof getCurrentUser>>) {
-  if (!user) {
-    return null;
-  }
-
-  const firstName = typeof user.user_metadata.first_name === "string" ? user.user_metadata.first_name : null;
-  const lastName = typeof user.user_metadata.last_name === "string" ? user.user_metadata.last_name : null;
-  const fullName = typeof user.user_metadata.full_name === "string" ? user.user_metadata.full_name : null;
-  return formatFullName(firstName, lastName, fullName || user.email || "Prihlásený");
-}
-
 export async function AppShell({ children }: AppShellProps) {
-  const user = await getCurrentUser();
-  const userLabel = getUserLabel(user);
-  const adminState = await withTimeout(
-    getAdminState(),
-    2500,
-    "Timed out while loading the admin navigation state."
-  ).catch(() => ({
-    error: "Nepodarilo sa načítať administrátorský stav.",
-    isAdmin: false,
-    userId: null
-  }));
-  const navigationItems = adminState.isAdmin
-    ? [...publicNavigationItems, ...adminNavigationItems]
-    : publicNavigationItems;
+  const authState = await getApplicationNavigationState();
+  const userLabel = authState.session?.displayName ?? null;
+  const navigationItems = authState.status === "active"
+    ? authState.role === "admin"
+      ? [...authenticatedNavigationItems, ...adminNavigationItems]
+      : authenticatedNavigationItems
+    : anonymousNavigationItems;
+  const canUseProtectedNavigation = authState.status === "active";
 
   return (
     <div className="min-h-screen">
@@ -69,7 +49,7 @@ export async function AppShell({ children }: AppShellProps) {
             ))}
           </div>
 
-          {user ? (
+          {canUseProtectedNavigation ? (
             <div className="hidden items-center gap-3 md:flex">
               <div className="flex max-w-[260px] items-center gap-2 rounded-[8px] border border-court-line bg-court-ice px-3 py-2">
                 <UserCircle className="h-5 w-5 shrink-0 text-court-mint" />

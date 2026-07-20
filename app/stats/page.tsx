@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { getAttendanceStats, getStats } from "@/lib/stats";
 import { getPlayerOptions, getPlayerProfileById } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { requireApplicationUser } from "@/src/server/auth";
 
 type StatsPageProps = {
   searchParams?: Promise<{
@@ -22,6 +23,7 @@ type StatsPageProps = {
 };
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
+  await requireApplicationUser("/stats");
   const params = await searchParams;
   const view = params?.view === "player" ? "player" : params?.view === "attendance" ? "attendance" : "team";
   const selectedPlayerId = params?.player?.trim() ? params.player : null;

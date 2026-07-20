@@ -1,10 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/supabase/server";
-
-function getSafeNext(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
+import { resolveApplicationSession } from "@/src/server/auth";
+import { getPostAuthRedirectPath, getSafeNext } from "@/src/server/auth/redirects";
 
 const emailOtpTypes = new Set<EmailOtpType>(["signup", "invite", "magiclink", "recovery", "email_change", "email"]);
 
@@ -38,5 +36,6 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, error.message);
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  const session = await resolveApplicationSession();
+  return NextResponse.redirect(new URL(getPostAuthRedirectPath(session, next), request.url));
 }

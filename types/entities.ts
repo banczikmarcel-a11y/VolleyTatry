@@ -1,9 +1,13 @@
 export type Profile = {
+  authUserId: string | null;
   id: string;
+  displayName: string;
   email: string | null;
   firstName: string | null;
   fullName: string | null;
+  isActive: boolean;
   lastName: string | null;
+  role: "admin" | "user";
   avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;

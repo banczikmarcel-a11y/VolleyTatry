@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { QueryToast } from "@/components/ui/query-toast";
 import { updateProfileEmail } from "@/app/profile/actions";
 import { getCurrentPlayerProfile } from "@/lib/profile";
-import { getCurrentUser } from "@/supabase/server";
+import { requireApplicationUser } from "@/src/server/auth";
 
 type ProfilePageProps = {
   searchParams?: Promise<{
@@ -15,21 +15,8 @@ type ProfilePageProps = {
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const params = await searchParams;
-  const user = await getCurrentUser();
-
-  if (!user) {
-    return (
-      <div className="space-y-6 sm:space-y-8">
-        <PageHeader eyebrow="Profil" title="Profil hráča" description="Po prihlásení sa tu zobrazia tvoje údaje a štatistiky." homeHref="/" />
-        <Card>
-          <p className="text-sm font-black uppercase text-court-mint">Bez prihlásenia</p>
-          <p className="mt-2 text-sm leading-6 text-court-blue">Prihlás sa a otvor si svoj hráčsky profil.</p>
-        </Card>
-      </div>
-    );
-  }
-
-  const { error, isConfigured, profile } = await getCurrentPlayerProfile(user.id);
+  const session = await requireApplicationUser("/profile");
+  const { error, isConfigured, profile } = await getCurrentPlayerProfile(session.profileId);
 
   if (!isConfigured) {
     return (

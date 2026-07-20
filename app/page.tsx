@@ -11,7 +11,7 @@ import { getAdminState } from "@/lib/admin";
 import { withTimeout } from "@/lib/async";
 import { getRecentCompletedMatches, getUpcomingProgramMatches } from "@/lib/matches";
 import { getHeadToHeadSummary } from "@/lib/stats";
-import { getCurrentUser } from "@/supabase/server";
+import { resolveApplicationSession } from "@/src/server/auth";
 
 const HOME_QUERY_TIMEOUT_MS = 3500;
 
@@ -25,7 +25,7 @@ type HomePageProps = {
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const [currentUser, headToHeadResult, adminState] = await Promise.all([
-    getCurrentUser(),
+    resolveApplicationSession(),
     withTimeout(
       getHeadToHeadSummary(),
       HOME_QUERY_TIMEOUT_MS,
@@ -47,7 +47,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   ]);
   const [programResultResolved, recentResultResolved] = await Promise.all([
     withTimeout(
-      getUpcomingProgramMatches(3, currentUser?.id),
+      getUpcomingProgramMatches(3, currentUser.isAuthenticated && currentUser.session ? currentUser.session.profileId : undefined),
       HOME_QUERY_TIMEOUT_MS,
       "Timed out while loading upcoming matches."
     ).catch(() => ({
@@ -56,7 +56,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       matches: []
     })),
     withTimeout(
-      getRecentCompletedMatches(3, currentUser?.id),
+      getRecentCompletedMatches(3, currentUser.isAuthenticated && currentUser.session ? currentUser.session.profileId : undefined),
       HOME_QUERY_TIMEOUT_MS,
       "Timed out while loading recent matches."
     ).catch(() => ({
@@ -153,7 +153,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   currentUserResponse={match.currentUserResponse}
                   players={match.signupPlayers}
                   returnPath="/"
-                  userId={currentUser?.id ?? null}
+                  userId={currentUser.isAuthenticated && currentUser.session ? currentUser.session.profileId : null}
                 />
               </MatchListCard>
             ))}

@@ -14,7 +14,7 @@ import { QueryToast } from "@/components/ui/query-toast";
 import { getAdminEmailRecipients, getAdminState } from "@/lib/admin";
 import { formatMatchDate, getMatchResultState } from "@/lib/match-display";
 import { formatMatchStatus, getMatchDetail } from "@/lib/matches";
-import { getCurrentUser } from "@/supabase/server";
+import { requireApplicationUser } from "@/src/server/auth";
 
 type MatchDetailPageProps = {
   params: Promise<{
@@ -34,9 +34,9 @@ const statusTone = {
 
 export default async function MatchDetailPage({ params, searchParams }: MatchDetailPageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const user = await getCurrentUser();
+  const session = await requireApplicationUser(`/matches/${id}`);
   const [{ error, isConfigured, match }, adminState, adminRecipients] = await Promise.all([
-    getMatchDetail(id, user?.id),
+    getMatchDetail(id, session.profileId),
     getAdminState(),
     getAdminEmailRecipients()
   ]);
@@ -170,7 +170,7 @@ export default async function MatchDetailPage({ params, searchParams }: MatchDet
                 matchId={match.id}
                 players={match.signupPlayers}
                 returnPath={`/matches/${match.id}`}
-                userId={user?.id ?? null}
+                userId={session.profileId}
               />
 
               <MatchResponsePanel

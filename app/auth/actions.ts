@@ -2,19 +2,22 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { splitFullName } from "@/lib/player-name";
-import { createAdminClient } from "@/supabase/admin";
-import { getSiteUrl, getSupabaseConfig } from "@/supabase/env";
 import { createClient } from "@/supabase/server";
-
-type AuthPath = "/login" | "/register";
+import { getSiteUrl } from "@/supabase/env";
+import { resolveApplicationSession } from "@/src/server/auth";
+import { getPostAuthRedirectPath, getVerificationRedirect } from "@/src/server/auth/redirects";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
 }
 
-function redirectWith(pathname: AuthPath, type: "error" | "message", message: string) {
+function getOptionalString(formData: FormData, key: string) {
+  const value = getString(formData, key);
+  return value || null;
+}
+
+function redirectWith(pathname: string, type: "error" | "message", message: string) {
   const params = new URLSearchParams({ [type]: message });
   redirect(`${pathname}?${params.toString()}`);
 }
@@ -30,6 +33,42 @@ function validateEmail(email: string) {
 
 function validatePassword(password: string) {
   return password.length >= 8;
+}
+
+function mapSignInError(message: string) {
+  const value = message.toLowerCase();
+
+  if (value.includes("invalid login credentials")) {
+    return "Nesprávny e-mail alebo heslo.";
+  }
+
+  if (value.includes("email not confirmed")) {
+    return "E-mail ešte nebol overený.";
+  }
+
+  if (value.includes("user not found")) {
+    return "Účet s týmto e-mailom neexistuje.";
+  }
+
+  if (value.includes("too many requests")) {
+    return "Prihlásenie je dočasne obmedzené. Skús to znova o chvíľu.";
+  }
+
+  return message;
+}
+
+function mapSignUpError(message: string) {
+  const value = message.toLowerCase();
+
+  if (value.includes("user already registered")) {
+    return "Používateľ s týmto e-mailom už existuje.";
+  }
+
+  if (value.includes("password")) {
+    return "Heslo nespĺňa požiadavky.";
+  }
+
+  return message;
 }
 
 async function getOrigin() {
@@ -63,98 +102,12 @@ async function getOrigin() {
   return "http://localhost:3000";
 }
 
-function getAuthError(error: unknown) {
-  if (error instanceof Error && error.message.includes("NEXT_PUBLIC_SUPABASE")) {
-    return "Supabase environment variables are missing. Add them to .env.local first.";
+function requireEmailValue(email: string | null): string {
+  if (!email) {
+    throw new Error("Nepodarilo sa určiť e-mail používateľa.");
   }
 
-  return error instanceof Error ? error.message : "Authentication failed. Please try again.";
-}
-
-async function mergeExistingPlayerProfile({
-  email,
-  firstName,
-  fullName,
-  lastName,
-  newProfileId
-}: {
-  email: string;
-  firstName: string;
-  fullName: string;
-  lastName: string;
-  newProfileId: string;
-}) {
-  if (!getSupabaseConfig().serviceRoleKey) {
-    return;
-  }
-
-  if (!firstName.trim() || !lastName.trim()) {
-    return;
-  }
-
-  const adminSupabase = createAdminClient();
-  const { data: existingProfile, error: existingProfileError } = await adminSupabase
-    .from("profiles")
-    .select("id,email")
-    .ilike("first_name", firstName)
-    .ilike("last_name", lastName)
-    .is("email", null)
-    .neq("id", newProfileId)
-    .limit(1)
-    .maybeSingle();
-
-  if (existingProfileError) {
-    throw existingProfileError;
-  }
-
-  if (!existingProfile) {
-    return;
-  }
-
-  const oldProfileId = existingProfile.id;
-
-  const [{ error: membershipsError }, { error: responsesError }, { error: lineupsError }, { error: matchesError }] = await Promise.all([
-    adminSupabase.from("team_memberships").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
-    adminSupabase.from("match_responses").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
-    adminSupabase.from("match_lineups").update({ profile_id: newProfileId }).eq("profile_id", oldProfileId),
-    adminSupabase.from("matches").update({ created_by: newProfileId }).eq("created_by", oldProfileId)
-  ]);
-
-  if (membershipsError) {
-    throw membershipsError;
-  }
-
-  if (responsesError) {
-    throw responsesError;
-  }
-
-  if (lineupsError && !lineupsError.message.includes("public.match_lineups")) {
-    throw lineupsError;
-  }
-
-  if (matchesError) {
-    throw matchesError;
-  }
-
-  const { error: newProfileUpdateError } = await adminSupabase
-    .from("profiles")
-    .update({
-      email,
-      first_name: firstName,
-      full_name: fullName,
-      last_name: lastName
-    })
-    .eq("id", newProfileId);
-
-  if (newProfileUpdateError) {
-    throw newProfileUpdateError;
-  }
-
-  const { error: deleteOldProfileError } = await adminSupabase.from("profiles").delete().eq("id", oldProfileId);
-
-  if (deleteOldProfileError) {
-    throw deleteOldProfileError;
-  }
+  return email;
 }
 
 export async function signInWithPassword(formData: FormData) {
@@ -163,128 +116,119 @@ export async function signInWithPassword(formData: FormData) {
   const next = getRedirectPath(formData);
 
   if (!validateEmail(email)) {
-    redirectWith("/login", "error", "Enter a valid email address.");
+    redirectWith("/login", "error", "Zadaj platný e-mail.");
   }
 
   if (!password) {
-    redirectWith("/login", "error", "Enter your password.");
+    redirectWith("/login", "error", "Zadaj heslo.");
   }
 
-  let authError: string | null = null;
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  try {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      authError = error.message;
+  if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      redirect(getVerificationRedirect(next, email));
     }
-  } catch (error) {
-    redirectWith("/login", "error", getAuthError(error));
+
+    redirectWith("/login", "error", mapSignInError(error.message));
   }
 
-  if (authError) {
-    redirectWith("/login", "error", authError);
+  const session = await resolveApplicationSession();
+  redirect(getPostAuthRedirectPath(session, next));
+}
+
+export async function signInWithGoogle(formData: FormData) {
+  const next = getRedirectPath(formData);
+  const origin = await getOrigin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+    },
+    provider: "google"
+  });
+
+  if (error || !data.url) {
+    redirectWith("/login", "error", error?.message ?? "Google prihlásenie sa nepodarilo spustiť.");
   }
 
-  redirect(next);
+  redirect(requireEmailValue(data.url));
 }
 
 export async function signUpWithPassword(formData: FormData) {
-  const fullName = getString(formData, "name");
+  const displayName = getString(formData, "name");
   const email = getString(formData, "email");
   const password = getString(formData, "password");
-  const { firstName, lastName } = splitFullName(fullName);
+  const passwordConfirmation = getString(formData, "password_confirmation");
 
-  if (!fullName) {
-    redirectWith("/register", "error", "Enter your name.");
+  if (!displayName) {
+    redirectWith("/register", "error", "Zadaj meno.");
   }
 
   if (!validateEmail(email)) {
-    redirectWith("/register", "error", "Enter a valid email address.");
+    redirectWith("/register", "error", "Zadaj platný e-mail.");
   }
 
   if (!validatePassword(password)) {
-    redirectWith("/register", "error", "Password must be at least 8 characters.");
+    redirectWith("/register", "error", "Heslo musí mať aspoň 8 znakov.");
   }
 
-  let authError: string | null = null;
+  if (password !== passwordConfirmation) {
+    redirectWith("/register", "error", "Heslá sa nezhodujú.");
+  }
 
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName || null,
-          full_name: fullName,
-          last_name: lastName || null
-        },
-        emailRedirectTo: `${await getOrigin()}/auth/callback`
-      }
-    });
-
-    if (error) {
-      authError = error.message;
+  const origin = await getOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        display_name: displayName,
+        full_name: displayName
+      },
+      emailRedirectTo: `${origin}/auth/callback`
     }
+  });
 
-    if (!error && data.user) {
-      await mergeExistingPlayerProfile({
-        email,
-        firstName: firstName || "",
-        fullName,
-        lastName: lastName || "",
-        newProfileId: data.user.id
-      });
-    }
-  } catch (error) {
-    redirectWith("/register", "error", getAuthError(error));
+  if (error) {
+    redirectWith("/register", "error", mapSignUpError(error.message));
   }
 
-  if (authError) {
-    redirectWith("/register", "error", authError);
-  }
-
-  redirectWith("/login", "message", "Check your email to confirm your account.");
+  redirect(`${getVerificationRedirect("/dashboard", email)}&message=${encodeURIComponent("Overovací e-mail bol odoslaný.")}`);
 }
 
-export async function sendMagicLink(formData: FormData) {
-  const email = getString(formData, "email");
+export async function resendVerificationEmail(formData: FormData) {
+  const emailFromForm = getOptionalString(formData, "email");
   const next = getRedirectPath(formData);
+  const resolvedSession = await resolveApplicationSession();
+  const authUser = resolvedSession.isAuthenticated ? resolvedSession.authUser : null;
+  const email = emailFromForm ?? authUser?.email ?? null;
 
-  if (!validateEmail(email)) {
-    redirectWith("/login", "error", "Enter a valid email address for magic link login.");
+  if (!email || !validateEmail(email)) {
+    redirectWith("/auth/verify-email", "error", "Nepodarilo sa určiť e-mail na opätovné odoslanie.");
   }
 
-  let authError: string | null = null;
+  const origin = await getOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    email: requireEmailValue(email),
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`
+    },
+    type: "signup"
+  });
 
-  try {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${await getOrigin()}/auth/callback?next=${encodeURIComponent(next)}`
-      }
-    });
-
-    if (error) {
-      authError = error.message;
-    }
-  } catch (error) {
-    redirectWith("/login", "error", getAuthError(error));
+  if (error) {
+    redirectWith("/auth/verify-email", "error", error.message);
   }
 
-  if (authError) {
-    redirectWith("/login", "error", authError);
-  }
-
-  redirectWith("/login", "message", "Magic link sent. Check your email.");
+  redirect(`${getVerificationRedirect(next, email)}&message=${encodeURIComponent("Overovací e-mail bol odoslaný znova.")}`);
 }
 
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-
   redirect("/login");
 }

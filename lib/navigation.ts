@@ -1,4 +1,9 @@
-export const publicNavigationItems = [
+export const anonymousNavigationItems = [
+  { href: "/", label: "Domov" },
+  { href: "/tournaments", label: "Turnaje" }
+] as const;
+
+export const authenticatedNavigationItems = [
   { href: "/", label: "Domov" },
   { href: "/tournaments", label: "Turnaje" },
   { href: "/dashboard", label: "Dashboard" },

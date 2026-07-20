@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { QueryToast } from "@/components/ui/query-toast";
 import { getSupabaseConfig } from "@/supabase/env";
-import { getCurrentUser } from "@/supabase/server";
+import { resolveApplicationSession } from "@/src/server/auth";
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -16,9 +16,9 @@ type LoginPageProps = {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const config = getSupabaseConfig();
-  const user = await getCurrentUser();
+  const session = await resolveApplicationSession();
 
-  if (user) {
+  if (session.isAuthenticated && session.status === "active") {
     redirect("/dashboard");
   }
 

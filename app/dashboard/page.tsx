@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { getYearlyWins } from "@/lib/stats";
+import { requireApplicationUser } from "@/src/server/auth";
 
 const TEAM_COLORS = {
   ostatni: {
@@ -25,6 +26,7 @@ function getPieStyle(leftWins: number, rightWins: number) {
 }
 
 export default async function DashboardPage() {
+  await requireApplicationUser("/dashboard");
   const { error: yearlyWinsError, isConfigured, years } = await getYearlyWins();
 
   const totalSummary = years.reduce(

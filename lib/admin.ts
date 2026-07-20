@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/supabase/admin";
 import { getSupabaseConfig } from "@/supabase/env";
-import { createClient, getCurrentUser } from "@/supabase/server";
+import { requireAdmin, resolveApplicationSession } from "@/src/server/auth";
 import type { Team } from "@/types/entities";
 
 export type AdminState = {
@@ -11,47 +11,38 @@ export type AdminState = {
 };
 
 export async function getAdminState(): Promise<AdminState> {
-  const user = await getCurrentUser();
+  const session = await resolveApplicationSession();
 
-  if (!user) {
+  if (!session.isAuthenticated || session.status !== "active" || !session.session) {
     return { error: null, isAdmin: false, userId: null };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("team_memberships")
-    .select("id")
-    .eq("profile_id", user.id)
-    .eq("status", "active")
-    .in("role", ["owner", "coach"])
-    .limit(1);
-
-  if (error) {
-    return { error: error.message, isAdmin: false, userId: user.id };
-  }
-
-  return { error: null, isAdmin: (data ?? []).length > 0, userId: user.id };
+  return {
+    error: null,
+    isAdmin: session.session.role === "admin",
+    userId: session.session.profileId
+  };
 }
 
 export async function requireAdminUser(next = "/admin/matches/new") {
-  const state = await getAdminState();
+  const session = await requireAdmin(next);
 
-  if (!state.userId) {
+  if (!session) {
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
 
-  if (!state.isAdmin) {
-    redirect("/dashboard?error=Admin access required.");
-  }
-
-  return state.userId;
+  return session.profileId;
 }
 
 export async function getAdminTeams(): Promise<{
   error: string | null;
   teams: Pick<Team, "id" | "name" | "slug">[];
 }> {
-  const supabase = await createClient();
+  if (!getSupabaseConfig().serviceRoleKey) {
+    return { error: "Chýba SUPABASE_SERVICE_ROLE_KEY.", teams: [] };
+  }
+
+  const supabase = createAdminClient();
   const { data, error } = await supabase.from("teams").select("id,name,slug").order("name");
 
   if (error) {
@@ -65,31 +56,25 @@ export async function getAdminEmailRecipients(): Promise<{
   emails: string[];
   error: string | null;
 }> {
-  const supabase = getSupabaseConfig().serviceRoleKey ? createAdminClient() : await createClient();
+  if (!getSupabaseConfig().serviceRoleKey) {
+    return { emails: [], error: null };
+  }
+
+  const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from("team_memberships")
-    .select("role,status,profiles:profile_id(email)")
-    .eq("status", "active")
-    .in("role", ["owner", "coach"]);
+    .from("profiles")
+    .select("email")
+    .eq("is_active", true)
+    .eq("role", "admin")
+    .not("email", "is", null);
 
   if (error) {
     return { emails: [], error: error.message };
   }
 
-  type AdminEmailRow = {
-    profiles: { email: string | null } | { email: string | null }[] | null;
-  };
-
-  const emails = Array.from(
-    new Set(
-      ((data ?? []) as AdminEmailRow[])
-        .flatMap((row) => {
-          const profile = Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles;
-          return profile?.email ? [profile.email] : [];
-        })
-        .filter(Boolean)
-    )
-  ).sort((left, right) => left.localeCompare(right, "sk", { sensitivity: "base" }));
+  const emails = Array.from(new Set((data ?? []).flatMap((row) => (row.email ? [row.email] : [])))).sort((left, right) =>
+    left.localeCompare(right, "sk", { sensitivity: "base" })
+  );
 
   return {
     emails,

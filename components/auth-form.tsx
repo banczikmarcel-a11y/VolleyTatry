@@ -1,7 +1,7 @@
-import { Dumbbell, Mail, ShieldCheck, Zap } from "lucide-react";
+import { Dumbbell, ShieldCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormCard } from "@/components/ui/card";
-import { sendMagicLink, signInWithPassword, signUpWithPassword } from "@/app/auth/actions";
+import { signInWithGoogle, signInWithPassword, signUpWithPassword } from "@/app/auth/actions";
 
 type AuthFormProps = {
   title: string;
@@ -9,6 +9,7 @@ type AuthFormProps = {
   submitLabel: string;
   mode: "login" | "register";
   showName?: boolean;
+  showPasswordConfirmation?: boolean;
   message?: string;
   error?: string;
   isConfigured?: boolean;
@@ -21,6 +22,7 @@ export function AuthForm({
   submitLabel,
   mode,
   showName = false,
+  showPasswordConfirmation = false,
   message,
   error,
   isConfigured = true,
@@ -109,6 +111,21 @@ export function AuthForm({
               required
             />
           </label>
+
+          {showPasswordConfirmation ? (
+            <label className="block">
+              <span className="text-[13px] font-bold text-court-ink sm:text-sm">Potvrdenie hesla</span>
+              <input
+                type="password"
+                name="password_confirmation"
+                autoComplete="new-password"
+                className="focus-ring mt-1.5 w-full rounded-[8px] border border-court-line px-3 py-2.5 text-sm text-court-ink sm:mt-2 sm:py-3"
+                minLength={8}
+                placeholder="zopakuj heslo"
+                required
+              />
+            </label>
+          ) : null}
         </div>
 
         <Button
@@ -119,17 +136,26 @@ export function AuthForm({
           {submitLabel}
         </Button>
 
+        <div className="mt-3 flex items-center gap-3">
+          <div className="h-px flex-1 bg-court-line" />
+          <span className="text-xs font-black uppercase text-court-blue">alebo</span>
+          <div className="h-px flex-1 bg-court-line" />
+        </div>
+
+        <Button
+          type="submit"
+          formAction={signInWithGoogle}
+          variant="secondary"
+          disabled={!isConfigured}
+          className="mt-3 w-full py-3"
+        >
+          Pokračovať cez Google
+        </Button>
+
         {mode === "login" ? (
-          <Button
-            type="submit"
-            formAction={sendMagicLink}
-            variant="secondary"
-            disabled={!isConfigured}
-            className="mt-3 w-full py-3"
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            Send magic link
-          </Button>
+          <p className="mt-4 text-center text-xs leading-5 text-court-blue">
+            Prihlásenie je dostupné cez e-mail a heslo alebo cez Google účet. Magic link v aplikácii nepoužívame ako hlavnú prihlasovaciu cestu.
+          </p>
         ) : null}
       </div>
     </FormCard>

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/supabase/admin";
 import { getSupabaseConfig } from "@/supabase/env";
-import { createClient } from "@/supabase/server";
+import { requireApplicationUser } from "@/src/server/auth";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -21,27 +21,20 @@ export async function updateProfileEmail(formData: FormData) {
     redirect(`/profile?error=${encodeURIComponent("Zadaj platný e-mail.")}`);
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const session = await requireApplicationUser("/profile");
+  const adminSupabase = createAdminClient();
 
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent("/profile")}`);
-  }
-
-  const { error: authError } = await supabase.auth.updateUser({ email });
+  const { error: authError } = await adminSupabase.auth.admin.updateUserById(session.authUserId, {
+    email
+  });
 
   if (authError) {
     redirect(`/profile?error=${encodeURIComponent(authError.message)}`);
   }
 
   if (getSupabaseConfig().serviceRoleKey) {
-    const adminSupabase = createAdminClient();
-    await adminSupabase.from("profiles").update({ email }).eq("id", user.id);
-  } else {
-    await supabase.from("profiles").update({ email }).eq("id", user.id);
+    await adminSupabase.from("profiles").update({ email }).eq("id", session.profileId);
   }
 
-  redirect(`/profile?message=${encodeURIComponent("E-mail bol aktualizovaný.")}`);
+  redirect(`/profile?message=${encodeURIComponent("E-mail bol aktualizovaný. Ak Supabase vyžaduje potvrdenie, skontroluj si novú overovaciu správu.")}`);
 }
