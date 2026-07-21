@@ -1,7 +1,7 @@
 import { Dumbbell, ShieldCheck, Zap } from "lucide-react";
 import { FormCard } from "@/components/ui/card";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { signInWithEmail, signUpWithPassword } from "@/app/auth/actions";
+import { signInWithEmail, signInWithGoogle, signUpWithPassword } from "@/app/auth/actions";
 
 type AuthFormProps = {
   title: string;
@@ -138,9 +138,28 @@ export function AuthForm({
           variant="primary"
         />
 
+        {isLogin ? (
+          <>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="h-px flex-1 bg-court-line" />
+              <span className="text-xs font-black uppercase text-court-blue">alebo</span>
+              <div className="h-px flex-1 bg-court-line" />
+            </div>
+
+            <SubmitButton
+              formAction={signInWithGoogle}
+              className="mt-3 w-full py-3"
+              disabled={!isConfigured}
+              idleLabel="Pokračovať cez Google"
+              pendingLabel="Presmerovávam na Google..."
+              variant="secondary"
+            />
+          </>
+        ) : null}
+
         {mode === "login" ? (
           <p className="mt-4 text-center text-xs leading-5 text-court-blue">
-            Zadaj e-mail, ktorý je priradený hráčovi v zozname. Na tento e-mail pošleme prihlasovací odkaz.
+            Zadaj e-mail, ktorý je priradený hráčovi v zozname, alebo použi Google s rovnakým e-mailom.
           </p>
         ) : null}
       </div>
