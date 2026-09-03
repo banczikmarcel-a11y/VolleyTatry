@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { withTimeout } from "@/lib/async";
 import { createAdminClient } from "@/supabase/admin";
 import { getSupabaseConfig } from "@/supabase/env";
 import { createClient, getCurrentUser } from "@/supabase/server";
@@ -11,6 +12,8 @@ import type {
   AuthIdentity,
   ResolveApplicationSessionResult
 } from "@/src/server/auth/types";
+
+const PROFILE_QUERY_TIMEOUT_MS = 2500;
 
 function mapAuthIdentity(user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>): AuthIdentity {
   return {
@@ -71,46 +74,64 @@ export async function resolveApplicationSession(): Promise<ResolveApplicationSes
 
   return resolveApplicationSessionCore({
     async findProfileByAuthUserId(authUserId) {
-      const { data, error } = await client
-        .from("profiles")
-        .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
-        .eq("auth_user_id", authUserId)
-        .maybeSingle();
+      const result = await withTimeout(
+        Promise.resolve(
+          client
+            .from("profiles")
+            .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
+            .eq("auth_user_id", authUserId)
+            .maybeSingle()
+        ),
+        PROFILE_QUERY_TIMEOUT_MS,
+        "Timed out while loading the application profile."
+      ).catch(() => null);
 
-      if (error || !data) {
+      if (result?.error || !result?.data) {
         return null;
       }
 
-      return mapProfile(data);
+      return mapProfile(result.data);
     },
     async findProfileByNormalizedEmail(normalizedEmail) {
-      const { data, error } = await client
-        .from("profiles")
-        .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
-        .eq("email_normalized", normalizedEmail)
-        .maybeSingle();
+      const result = await withTimeout(
+        Promise.resolve(
+          client
+            .from("profiles")
+            .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
+            .eq("email_normalized", normalizedEmail)
+            .maybeSingle()
+        ),
+        PROFILE_QUERY_TIMEOUT_MS,
+        "Timed out while loading the application profile."
+      ).catch(() => null);
 
-      if (error || !data) {
+      if (result?.error || !result?.data) {
         return null;
       }
 
-      return mapProfile(data);
+      return mapProfile(result.data);
     },
     identity,
     async linkProfileAuthUserId(profileId, authUserId) {
-      const { data, error } = await client
-        .from("profiles")
-        .update({ auth_user_id: authUserId })
-        .eq("id", profileId)
-        .is("auth_user_id", null)
-        .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
-        .maybeSingle();
+      const result = await withTimeout(
+        Promise.resolve(
+          client
+            .from("profiles")
+            .update({ auth_user_id: authUserId })
+            .eq("id", profileId)
+            .is("auth_user_id", null)
+            .select("id,auth_user_id,email,email_normalized,display_name,full_name,first_name,last_name,role,is_active")
+            .maybeSingle()
+        ),
+        PROFILE_QUERY_TIMEOUT_MS,
+        "Timed out while linking the application profile."
+      ).catch(() => null);
 
-      if (error || !data) {
+      if (result?.error || !result?.data) {
         return null;
       }
 
-      return mapProfile(data);
+      return mapProfile(result.data);
     }
   });
 }

@@ -8,6 +8,7 @@ import { PlayerStatsPicker } from "@/components/stats/player-stats-picker";
 import { TeamRecordCard } from "@/components/stats/team-record-card";
 import { buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { withTimeout } from "@/lib/async";
 import { getAttendanceStats, getStats } from "@/lib/stats";
 import { getPlayerOptions, getPlayerProfileById } from "@/lib/profile";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,8 @@ type StatsPageProps = {
     year?: string;
   }>;
 };
+
+const STATS_QUERY_TIMEOUT_MS = 3500;
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
   const params = await searchParams;
@@ -46,18 +49,53 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     canAccessRestrictedViews = session.isAuthenticated && session.status === "active";
   }
 
-  const teamStatsResult = await getStats(params?.year, params?.quarter, params?.month);
+  const fallbackSelectedYear = Number(params?.year);
+  const resolvedFallbackYear = Number.isInteger(fallbackSelectedYear) ? fallbackSelectedYear : new Date().getFullYear();
+  const teamStatsResult = await withTimeout(
+    getStats(params?.year, params?.quarter, params?.month),
+    STATS_QUERY_TIMEOUT_MS,
+    "Timed out while loading team stats."
+  ).catch(() => ({
+    availableMonths: [],
+    availableQuarters: [],
+    error: "Nepodarilo sa načítať tímové štatistiky.",
+    filteredMatchesCount: 0,
+    isConfigured: true,
+    records: [],
+    selectedMonth: null,
+    selectedQuarter: null,
+    selectedYear: resolvedFallbackYear,
+    years: [resolvedFallbackYear]
+  }));
   const { availableMonths, availableQuarters, error, filteredMatchesCount, isConfigured, records, selectedMonth, selectedQuarter, selectedYear, years } =
     teamStatsResult;
   const playersResult = canAccessRestrictedViews
-    ? await getPlayerOptions()
+    ? await withTimeout(
+        getPlayerOptions(),
+        STATS_QUERY_TIMEOUT_MS,
+        "Timed out while loading player options."
+      ).catch(() => ({ error: "Nepodarilo sa načítať zoznam hráčov.", isConfigured: true, players: [] }))
     : { error: null, isConfigured: false, players: [] };
   const playerProfileResult =
     canAccessRestrictedViews && selectedPlayerId
-      ? await getPlayerProfileById(selectedPlayerId)
+      ? await withTimeout(
+          getPlayerProfileById(selectedPlayerId),
+          STATS_QUERY_TIMEOUT_MS,
+          "Timed out while loading the player profile."
+        ).catch(() => ({ error: "Nepodarilo sa načítať štatistiku hráča.", isConfigured: true, profile: null }))
       : { error: null, isConfigured: false, profile: null };
   const attendanceResult = canAccessRestrictedViews
-    ? await getAttendanceStats(params?.year)
+    ? await withTimeout(
+        getAttendanceStats(params?.year),
+        STATS_QUERY_TIMEOUT_MS,
+        "Timed out while loading attendance stats."
+      ).catch(() => ({
+        error: "Nepodarilo sa načítať účasť.",
+        isConfigured: true,
+        rows: [],
+        selectedYear,
+        years: [selectedYear]
+      }))
     : { error: null, isConfigured: false, rows: [], selectedYear, years: [selectedYear] };
   const { error: playersError, players, isConfigured: playersConfigured } = playersResult;
 
